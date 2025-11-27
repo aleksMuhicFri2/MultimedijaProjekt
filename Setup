@@ -1,0 +1,107 @@
+SETUP INSTRUCTIONS
+
+Install required software:
+
+Docker Desktop
+
+Python 3.10 or newer
+
+Node.js 20 or newer
+
+Git
+
+Restart the computer after installing Docker Desktop.
+
+Clone the project:
+
+git clone https://github.com/
+<username>/multimedijaProjekt.git
+cd multimedijaProjekt
+
+Start Elasticsearch and Kibana (required for the backend):
+
+Open Docker Desktop and wait until it shows “Docker is running”.
+
+In the project root directory run:
+
+docker-compose up -d
+
+Verify the containers are running:
+
+docker ps
+
+You should see two containers: "es" and "kibana".
+If Elasticsearch is not running, the backend will not work.
+
+Backend setup (Flask API):
+
+cd backend
+
+Create a virtual environment:
+
+python -m venv venv
+
+Activate it (Windows):
+
+venv\Scripts\activate
+
+Install dependencies:
+
+pip install -r requirements.txt
+
+Start the backend:
+
+python app.py
+
+The backend will run on http://localhost:5000
+
+Available API endpoints:
+
+/api/load (loads test data)
+
+/api/region/<name>
+
+/api/score (POST request)
+
+There is no route at "/", so http://localhost:5000/
+ will show 404.
+
+Frontend setup (React + Vite):
+
+cd ../frontend
+npm install
+npm run dev
+
+The frontend runs on http://localhost:5173
+
+Project structure:
+
+multimedijaProjekt/
+backend/ (Flask API)
+frontend/ (React frontend)
+docker-compose.yml (Elasticsearch + Kibana setup)
+
+How components interact:
+
+The frontend communicates with the backend using HTTP requests.
+
+The backend retrieves and stores data in Elasticsearch.
+
+Elasticsearch acts as the database for region data.
+
+How to run the whole project (every time):
+
+Start Docker Desktop.
+
+In project root: docker-compose up -d
+
+Start backend:
+cd backend
+venv\Scripts\activate
+python app.py
+
+Start frontend:
+cd frontend
+npm run dev
+
+Open http://localhost:5173 in the browser.
