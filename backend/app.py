@@ -1,6 +1,19 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import elasticsearch
+import pandas as pd
+
+from data_processor import (
+    init_region_data,
+    process_population,
+    process_prices,
+    normalize_region_data
+)
+
+from surs_api import get_population_per_obcina
+
+from region_mapping import OB_TO_REGION
+
 
 print("app.py STARTING")
 
@@ -10,9 +23,49 @@ CORS(app)
 es = elasticsearch.Elasticsearch(hosts=["http://localhost:9200"])
 INDEX = "regions"
 
+# ------------------------------
+# Load sale prices (Houses + Apartments)
+# ------------------------------
+prices_df = pd.read_csv("data/pricesHouses.csv")
+prices_by_muni = {}
+
+for _, row in prices_df.iterrows():
+    muni = row["OBCINA"]
+
+    if muni not in prices_by_muni:
+        prices_by_muni[muni] = {}
+
+    cat = row["category"]  # 'apartment' or 'house'
+    prices_by_muni[muni][cat] = {
+        "deals_count": int(row["deals_count"]),
+        "avg_price_m2": float(row["avg_price_m2"]),
+        "median_price_m2": float(row["median_price_m2"])
+    }
+
+# ------------------------------
+# Load rental prices (per m2)
+# ------------------------------
+rent_df = pd.read_csv("data/pricesRent.csv")
+rent_by_muni = {}
+
+for _, row in rent_df.iterrows():
+    muni = row["OBCINA"]
+
+    rent_by_muni[muni] = {
+        "deals_count_rent": int(row["deals_count"]),
+        "avg_rent_m2": float(row["avg_rent_m2"]),
+        "median_rent_m2": float(row["median_rent_m2"])
+    }
+
+
 # Ensure index exists
 if not es.indices.exists(index=INDEX):
     es.indices.create(index=INDEX)
+
+
+# ------------------------------
+#       API ENDPOINTS
+# ------------------------------
 
 @app.route("/api/region/<name>")
 def get_region(name):
@@ -20,6 +73,7 @@ def get_region(name):
     if not res["hits"]["hits"]:
         return jsonify({"error": "Region not found"}), 404
     return jsonify(res["hits"]["hits"][0]["_source"])
+
 
 @app.route("/api/score", methods=["POST"])
 def score_regions():
@@ -42,19 +96,28 @@ def score_regions():
         "best": ranked[0] if ranked else None
     })
 
-@app.route("/api/load")
-def load_fake():
-    """Example placeholder dataset"""
-    data = [
-        {"region": "gorenjska", "salary": 1750, "housing": 2400, "pollution": 32, "health": 7},
-        {"region": "primorska", "salary": 1800, "housing": 3100, "pollution": 30, "health": 8},
-        {"region": "stajerska", "salary": 1600, "housing": 2000, "pollution": 45, "health": 6}
-    ]
 
-    for entry in data:
-        es.index(index=INDEX, document=entry)
+@app.route("/api/update-data")
+def update_data():
+    print("Updating data from SURS...")
 
-    return {"message": "Loaded dummy data"}
+    pop_raw = get_population_per_obcina()
+    if pop_raw is None:
+        return {"error": "Population API returned nothing"}, 500
+
+    region_data = init_region_data()
+
+    # uses static MUNICIPALITY_CODE_MAP internally
+    process_population(pop_raw, region_data)
+
+    process_prices(prices_by_muni, rent_by_muni, region_data)
+
+    for region, metrics in region_data.items():
+        body = {"region": region, **metrics}
+        es.index(index=INDEX, document=body)
+
+    return {"message": "Updated successfully", "regions": region_data}
+
 
 if __name__ == "__main__":
     app.run(port=5000, debug=True)
