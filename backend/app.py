@@ -1,16 +1,21 @@
+
+
 from flask import Flask, jsonify
 from flask_cors import CORS
 import elasticsearch
+
+from municipality_codes import MUNICIPALITY_CODE_MAP
+from region_mapping import OB_TO_REGION
+from name_utils import normalize_name
 import pandas as pd
 
 from data_processor import (
     init_municipalities,
     process_population,
-    process_prices
+    process_prices,
+    process_ioz
 )
 from surs_api import get_population_per_obcina
-
-print("app.py STARTING")
 
 app = Flask(__name__)
 CORS(app)
@@ -18,6 +23,8 @@ CORS(app)
 es = elasticsearch.Elasticsearch(hosts=["http://localhost:9200"])
 INDEX = "municipalities"
 
+
+print("app.py STARTING")
 
 # ------------------------------
 # LOAD CSV DATA (FIRST!)
@@ -45,6 +52,8 @@ for _, row in rent_df.iterrows():
         "median_rent_m2": float(row["median_rent_m2"])
     }
 
+ioz_df = pd.read_csv("data/ioz.csv")    
+
 
 # ------------------------------
 # ENSURE INDEX
@@ -67,6 +76,8 @@ def load_all_data():
 
     process_population(pop_raw, municipalities)
     process_prices(prices_by_muni, rent_by_muni, municipalities)
+    process_ioz(ioz_df, municipalities)
+    
 
     for code, muni in municipalities.items():
         es.index(index=INDEX, id=code, document=muni.to_dict())
@@ -75,11 +86,11 @@ def load_all_data():
 
 
 def municipalities_exist():
-    try:
-        res = es.count(index=INDEX)
-        return res["count"] > 0
-    except Exception:
+    if not es.indices.exists(index=INDEX):
         return False
+
+    res = es.count(index=INDEX)
+    return res["count"] > 0
 
 
 # ------------------------------
@@ -107,6 +118,27 @@ def get_municipality(code):
     if not res or not res.get("found"):
         return jsonify({"error": "Municipality not found"}), 404
     return jsonify(res["_source"])
+
+
+# -----------------------------------------
+# RETURN REGIONS KEYED BY MUNICIPALITY CODE
+# -----------------------------------------
+@app.route("/api/municipalities/regions")
+def get_municipality_regions():
+    region_by_code = {}
+
+    for code, name in MUNICIPALITY_CODE_MAP.items():
+        if code == "0":
+            continue
+
+        normalized = normalize_name(name)
+        region = OB_TO_REGION.get(normalized)
+
+        if region:
+            region_by_code[code] = region
+
+    return jsonify(region_by_code)
+
 
 
 if __name__ == "__main__":

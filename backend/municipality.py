@@ -21,6 +21,12 @@ class Municipality:
         self.deals_sale_house = 0
         self.deals_rent = 0
 
+        # IOZ (health insurance) data
+        self.ioz_ratio = None
+        self.insured_total = None
+        self.insured_with_ioz = None
+        self.insured_without_ioz = None
+
     def to_dict(self):
         return {
             "code": self.code,
@@ -35,4 +41,8 @@ class Municipality:
             "deals_sale_apartment": self.deals_sale_apartment,
             "deals_sale_house": self.deals_sale_house,
             "deals_rent": self.deals_rent,
+            "ioz_ratio": self.ioz_ratio,
+            "insured_total": self.insured_total,
+            "insured_with_ioz": self.insured_with_ioz,
+            "insured_without_ioz": self.insured_without_ioz,
         }

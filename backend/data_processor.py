@@ -86,3 +86,21 @@ def process_prices(prices_by_muni, rent_by_muni, municipalities):
         m = municipalities[code]
         m.avg_rent_m2 = float(data["avg_rent_m2"])
         m.deals_rent = int(data["deals_count_rent"])
+
+def process_ioz(ioz_df, municipalities, year=2023):
+    for _, row in ioz_df.iterrows():
+        if int(row["year"]) != year:
+            continue
+
+        muni_name = row["municipality"]
+        code = NAME_TO_CODE.get(normalize_name(muni_name))
+
+        if not code or code not in municipalities:
+            continue
+
+        m = municipalities[code]
+
+        m.ioz_ratio = float(row["iozRatio"])
+        m.insured_total = int(row["insuredPeopleCount"])
+        m.insured_with_ioz = int(row["insuredPeopleCountWithIOZ"])
+        m.insured_without_ioz = int(row["insuredPeopleCountWithoutIOZ"])
