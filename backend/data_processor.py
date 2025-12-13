@@ -2,21 +2,7 @@ import unicodedata
 from municipality_codes import MUNICIPALITY_CODE_MAP
 from municipality import Municipality
 from region_mapping import OB_TO_REGION
-
-
-# ------------------------------
-# NORMALIZATION
-# ------------------------------
-def normalize_name(name: str):
-    if not name:
-        return None
-
-    name = name.split("/")[0].strip().lower()
-    return "".join(
-        c for c in unicodedata.normalize("NFD", name)
-        if unicodedata.category(c) != "Mn"
-    )
-
+from name_utils import normalize_name
 
 # ------------------------------
 # INIT MUNICIPALITIES
@@ -30,6 +16,8 @@ def init_municipalities():
 
         m = Municipality(code, name)
         m.region = OB_TO_REGION.get(normalize_name(name))
+        if m.region is None:
+            print(f"[MISSING REGION] {code}: {name} -> {normalize_name(name)}")
         municipalities[code] = m
 
     return municipalities

@@ -1,3 +1,6 @@
+
+// parses municipality data from svg to build new structure for the html
+
 export function parseSloveniaSvg(svgText) {
   const parser = new DOMParser();
   const svgDoc = parser.parseFromString(svgText, "image/svg+xml");

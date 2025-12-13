@@ -1,15 +1,17 @@
 OB_TO_REGION = {}
 
+from name_utils import normalize_name
+
 def add(region_key, municipalities):
     for m in municipalities:
-        OB_TO_REGION[m.lower()] = region_key
+        OB_TO_REGION[normalize_name(m)] = region_key
 
 
 add("gorenjska", [
     "Bled", "Bohinj", "Cerklje na Gorenjskem", "Gorenja vas-Poljane",
     "Gorje", "Jesenice", "Jezersko", "Kranj", "Kranjska Gora",
     "Naklo", "Preddvor", "Radovljica", "Šenčur", "Škofja Loka",
-    "Tržič", "Železniki", "Žiri"
+    "Tržič", "Železniki", "Žiri", "Žirovnica"
 ])
 
 add("goriska", [
@@ -34,7 +36,7 @@ add("osrednjeslovenska", [
     "Ivančna Gorica", "Kamnik", "Komenda", "Litija", "Ljubljana",
     "Log-Dragomer", "Logatec", "Lukovica", "Medvode", "Mengeš",
     "Moravče", "Škofljica", "Trzin", "Velike Lašče", "Vodice",
-    "Vrhnika"
+    "Vrhnika", "Šmartno pri Litiji"
 ])
 
 add("zasavska", [
@@ -46,13 +48,16 @@ add("savinjska", [
     "Kozje", "Laško", "Ljubno", "Luče", "Mozirje", "Nazarje", 
     "Polzela", "Prebold", "Rečica ob Savinji", "Rogaška Slatina",
     "Rogatec", "Šmartno ob Paki", "Šoštanj", "Štore", "Tabor",
-    "Velenje", "Vitanje", "Vojnik", "Zreče"
+    "Velenje", "Vitanje", "Vojnik", "Zreče","Bistrica ob Sotli",
+    "Podčetrtek", "Solčava", "Šentjur", "Šmarje pri Jelšah",
+    "Vransko", "Žalec"
 ])
 
 add("koroska", [
     "Črna na Koroškem", "Dravograd", "Mežica", "Mislinja",
     "Muta", "Podvelka", "Prevalje", "Radlje ob Dravi",
-    "Ravne na Koroškem", "Ribnica na Pohorju", "Slovenj Gradec"
+    "Ravne na Koroškem", "Ribnica na Pohorju", "Slovenj Gradec",
+    "Vuzenica",
 ])
 
 add("podravska", [
@@ -63,9 +68,10 @@ add("podravska", [
     "Oplotnica", "Ormož", "Pesnica", "Podlehnik", "Poljčane",
     "Ptuj", "Rače-Fram", "Ruše", "Selnica ob Dravi",
     "Slovenska Bistrica", "Slovenske Konjice", "Starše",
-    "Sveta Ana", "Sveta Trojica", "Sveti Andraž",
-    "Sveti Jurij v Slovenskih Goricah", "Šentilj",
-    "Žetale"
+    "Sveta Ana", "Sveta Trojica v Slov. goricah", "Sveti Andraž v Slov. goricah",
+    "Sveti Jurij v Slov. Goricah", "Šentilj", "Žetale", "Cirkulane",
+    "Juršinci", "Križevci", "Markovci", "Središče ob Dravi",
+    "Sveti Tomaž", "Trnovska vas", "Videm", "Zavrč",
 ])
 
 add("pomurska", [
@@ -73,7 +79,8 @@ add("pomurska", [
     "Gornji Petrovci", "Grad", "Hodoš", "Kobilje", "Kuzma", "Lendava",
     "Moravske Toplice", "Murska Sobota", "Odranci", "Puconci",
     "Radenci", "Razkrižje", "Rogašovci", "Šalovci", "Tišina",
-    "Turnišče", "Velika Polana", "Veržej"
+    "Turnišče", "Velika Polana", "Veržej", "Cankova", "Ljutomer",
+    "Sveti Jurij ob Ščavnici"
 ])
 
 add("posavska", [
@@ -84,7 +91,8 @@ add("jugovzhodna", [
     "Črnomelj", "Dolenjske Toplice", "Kočevje", "Loški Potok",
     "Metlika", "Mirna", "Mirna Peč", "Novo mesto", "Osilnica",
     "Ribnica", "Semič", "Sodražica", "Straža", "Šentjernej",
-    "Šmarješke Toplice", "Trebnje", "Žužemberk"
+    "Šmarješke Toplice", "Trebnje", "Žužemberk", "Kostel",
+    "Mokronog - Trebelno", "Šentrupert", "Škocjan"
 ])
 
 

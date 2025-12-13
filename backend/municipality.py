@@ -1,3 +1,6 @@
+
+# defines a new municipality object with necessary data
+
 class Municipality:
     def __init__(self, code, name):
         self.code = code          # "061"
