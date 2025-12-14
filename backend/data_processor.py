@@ -1,4 +1,3 @@
-import unicodedata
 from municipality_codes import MUNICIPALITY_CODE_MAP
 from municipality import Municipality
 from region_mapping import OB_TO_REGION

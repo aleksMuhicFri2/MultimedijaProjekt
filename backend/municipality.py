@@ -27,6 +27,10 @@ class Municipality:
         self.insured_with_ioz = None
         self.insured_without_ioz = None
 
+        # MetaData
+        self.latitude = None
+        self.longitude = None
+
     def to_dict(self):
         return {
             "code": self.code,
@@ -45,4 +49,6 @@ class Municipality:
             "insured_total": self.insured_total,
             "insured_with_ioz": self.insured_with_ioz,
             "insured_without_ioz": self.insured_without_ioz,
+            "latitude": self.latitude,
+            "longitude": self.longitude,
         }

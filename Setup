@@ -1,6 +1,8 @@
 SETUP INSTRUCTIONS
 
-Install required software:
+SYSTEM REQUIREMENTS
+
+Install the following software:
 
 Docker Desktop
 
@@ -10,38 +12,46 @@ Node.js 20 or newer
 
 Git
 
-Restart the computer after installing Docker Desktop.
+After installing Docker Desktop, RESTART your computer.
 
-Clone the project:
+CLONE THE PROJECT
+
+Open a terminal and run:
 
 git clone https://github.com/
-<username>/multimedijaProjekt.git
 cd multimedijaProjekt
 
-Start Elasticsearch and Kibana (required for the backend):
+ELASTICSEARCH + KIBANA (REQUIRED)
 
-Open Docker Desktop and wait until it shows “Docker is running”.
+This project uses Elasticsearch 7.x (NOT 8 or 9).
 
-In the project root directory run:
+Open Docker Desktop
+
+Wait until it says “Docker is running”
+
+From the project root run:
 
 docker-compose up -d
 
-Verify the containers are running:
+You must see:
 
-docker ps
+es
 
-You should see two containers: "es" and "kibana".
-If Elasticsearch is not running, the backend will not work.
+kibana
 
-Backend setup (Flask API):
+If Elasticsearch is not running, the backend WILL NOT WORK.
+
+BACKEND SETUP (FLASK)
+
+Go to backend folder:
 
 cd backend
 
-Create a virtual environment:
+Create virtual environment:
 
 python -m venv venv
 
-Activate it (Windows):
+Activate virtual environment (Windows):
 
 venv\Scripts\activate
 
@@ -49,59 +59,92 @@ Install dependencies:
 
 pip install -r requirements.txt
 
-Start the backend:
+Start backend:
 
 python app.py
 
-The backend will run on http://localhost:5000
+Backend URL:
 
-Available API endpoints:
+http://localhost:5000
 
-/api/load (loads test data)
+NOTES:
 
-/api/region/<name>
+There is NO route at /
 
-/api/score (POST request)
+http://localhost:5000/
+ returning 404 is NORMAL
 
-There is no route at "/", so http://localhost:5000/
- will show 404.
+Elasticsearch index is created automatically on first run
 
-Frontend setup (React + Vite):
+AVAILABLE API ENDPOINTS:
+
+GET /api/municipality/<code>
+
+GET /api/municipalities/regions
+
+GET /api/reload (clears and reloads Elasticsearch)
+
+FRONTEND SETUP (REACT + VITE)
+
+Go to frontend folder:
 
 cd ../frontend
+
+Install dependencies:
+
 npm install
+
+Start frontend:
+
 npm run dev
 
-The frontend runs on http://localhost:5173
+Frontend URL:
 
-Project structure:
+http://localhost:5173
+
+PROJECT STRUCTURE
 
 multimedijaProjekt/
-backend/ (Flask API)
-frontend/ (React frontend)
-docker-compose.yml (Elasticsearch + Kibana setup)
+backend/ Flask API
+frontend/ React frontend
+docker-compose.yml
+SETUP.txt
 
-How components interact:
+HOW EVERYTHING CONNECTS
 
-The frontend communicates with the backend using HTTP requests.
+Frontend communicates with backend using HTTP
 
-The backend retrieves and stores data in Elasticsearch.
+Backend stores and reads data from Elasticsearch
 
-Elasticsearch acts as the database for region data.
+Elasticsearch acts as the database
 
-How to run the whole project (every time):
+Municipality CODE is the shared key between:
 
-Start Docker Desktop.
+SVG map
 
-In project root: docker-compose up -d
+Backend data
+
+Elasticsearch documents
+
+HOW TO RUN THE PROJECT (EVERY TIME)
+
+Start Docker Desktop
+
+From project root:
+
+docker-compose up -d
 
 Start backend:
+
 cd backend
 venv\Scripts\activate
 python app.py
 
 Start frontend:
+
 cd frontend
 npm run dev
 
-Open http://localhost:5173 in the browser.
+Open browser:
+
+http://localhost:5173
