@@ -103,3 +103,30 @@ def process_ioz(ioz_df, municipalities, year=2023):
         m.insured_total = int(row["insuredPeopleCount"])
         m.insured_with_ioz = int(row["insuredPeopleCountWithIOZ"])
         m.insured_without_ioz = int(row["insuredPeopleCountWithoutIOZ"])
+
+def process_lat_long(coords_data, municipalities):
+    """Updates municipalities with lat/long from a list of dictionaries."""
+    for item in coords_data:
+        # 1. Get the code and force it to be a 3-digit string (e.g., 61 -> "061")
+        raw_code = item.get("code")
+        code = str(raw_code).zfill(3) if raw_code is not None else None
+        
+        # 2. If code matching fails, fallback to name normalization
+        if not code or code not in municipalities:
+            name = item.get("municipality") or item.get("name")
+            code = NAME_TO_CODE.get(normalize_name(name))
+            
+        # 3. If we found a valid municipality object, update its attributes
+        if code and code in municipalities:
+            m = municipalities[code]
+            
+            # Use a helper to safely convert to float, defaulting to 0.0 if missing
+            def safe_float(key_list):
+                for key in key_list:
+                    val = item.get(key)
+                    if val is not None and str(val).strip() != "" and str(val).lower() != 'nan':
+                        return float(val)
+                return 0.0
+
+            m.latitude = safe_float(["lat", "latitude"])
+            m.longitude = safe_float(["lon", "lng", "longitude"])

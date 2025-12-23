@@ -17,7 +17,8 @@ from data_processor import (
     init_municipalities,
     process_population,
     process_prices,
-    process_ioz
+    process_ioz,
+    process_lat_long
 )
 from surs_api import get_population_per_obcina
 
@@ -78,6 +79,10 @@ def fetch_and_process_data():
     pop_raw = get_population_per_obcina()
     if not pop_raw:
         raise RuntimeError("Population API returned nothing")
+    
+    coords_df = pd.read_csv("data/municipality_coords.csv")
+    # Convert it to a list of dictionaries so process_lat_long can read it
+    coords_list = coords_df.to_dict('records')
 
     # 5. Process & Merge
     logger.info("Merging data...")
@@ -85,6 +90,7 @@ def fetch_and_process_data():
     process_population(pop_raw, municipalities)
     process_prices(prices_by_muni, rent_by_muni, municipalities)
     process_ioz(ioz_df, municipalities)
+    process_lat_long(coords_list, municipalities)
     
     return municipalities
 

@@ -22,52 +22,50 @@ function App() {
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
       {/* TITLE */}
-      <h1
-        style={{
-          margin: "0.5rem",
-          textAlign: "center",
-        }}
-      >
+      <h1 style={{ margin: "0.5rem", textAlign: "center" }}>
         Slovenian Municipalities
       </h1>
 
-      {/* MAIN CONTENT */}
+      {/* MAP – TOP (Takes remaining space) */}
       <div
         style={{
-          display: "flex",
           flex: 1,
-          overflow: "hidden",
+          width: "100%",
+          display: "flex",
+          // Align content to the right
+          justifyContent: "flex-end", 
+          // Center it vertically within the top space
+          alignItems: "center",       
+          position: "relative",
+          paddingRight: "50px", // A little breathing room from the right edge
+          boxSizing: "border-box"
         }}
       >
-        {/* DATA PANEL – LEFT */}
-        <div
-          style={{
-            width: "350px",
-            padding: "1rem",
-            overflowY: "auto",
-            borderRight: "1px solid #ccc",
-          }}
-        >
-          {loading && <p>Loading…</p>}
-          {data && <MunicipalityPanel data={data} />}
-          {!data && !loading && <p>Click a municipality</p>}
-        </div>
-
-        {/* MAP – RIGHT */}
-        <div
-          style={{
-            flex: 1,
-            overflow: "hidden",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
+        {/* Map Wrapper: Takes up ~2/3 (60-65%) of the width */}
+        <div style={{ width: "40%" }}>
           <SloveniaMap
             selectedCode={selectedCode}
             onSelectMunicipality={setSelectedCode}
           />
         </div>
+      </div>
+
+      {/* DATA PANEL – BOTTOM */}
+      <div
+        style={{
+          height: "30vh",
+          width: "100%",
+          borderTop: "2px solid #ccc",
+          backgroundColor: "#f9f9f9",
+          overflowY: "auto",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        {loading && <p>Loading data...</p>}
+        {!data && !loading && <p style={{ color: "#666" }}>Select a municipality on the map</p>}
+        {data && <MunicipalityPanel data={data} />}
       </div>
     </div>
   );

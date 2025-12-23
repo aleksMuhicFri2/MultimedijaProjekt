@@ -67,14 +67,15 @@ function SloveniaMap({ selectedCode, onSelectMunicipality }) {
       <svg
         viewBox="375000 -200000 250000 180000"
         preserveAspectRatio="xMidYMid meet"
-        style={{ width: "50%", height: "auto" }}
+        // CHANGE: Set width to 100% so it fills the parent container in App.js
+        style={{ width: "100%", height: "auto", display: "block" }} 
       >
         {municipalities.flatMap((m) =>
           m.dList.map((d, i) => (
             <path
               key={`${m.code}-${i}`}
               d={d}
-              fill={REGION_COLORS[m.region] ?? FALLBACK_COLOR}
+              fill={REGION_COLORS[m.region] ?? "#e5e7eb"}
               stroke="#ffffff"
               strokeWidth={20}
               className="municipality"
