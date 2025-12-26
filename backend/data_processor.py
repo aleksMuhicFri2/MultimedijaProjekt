@@ -130,3 +130,14 @@ def process_lat_long(coords_data, municipalities):
 
             m.latitude = safe_float(["lat", "latitude"])
             m.longitude = safe_float(["lon", "lng", "longitude"])
+
+def process_history(history_data, municipalities):
+    for item in history_data:
+        code = str(item.get("code")).zfill(3)
+        if code in municipalities:
+            m = municipalities[code]
+            m.history_sunny_days = int(item.get("sunny_days_count", 0))
+            m.history_rainy_days = int(item.get("rainy_days_count", 0))
+            m.history_foggy_days = int(item.get("foggy_days_count", 0))
+            m.history_avg_aqi = float(item.get("avg_aqi", 0))
+            m.history_avg_temp = float(item.get("avg_temp_yearly", 0))            

@@ -31,6 +31,12 @@ class Municipality:
         self.latitude = None
         self.longitude = None
 
+        self.history_sunny_days = 0
+        self.history_rainy_days = 0
+        self.history_foggy_days = 0
+        self.history_avg_aqi = 0.0
+        self.history_avg_temp = 0.0
+
     def to_dict(self):
         return {
             "code": self.code,
@@ -51,4 +57,9 @@ class Municipality:
             "insured_without_ioz": self.insured_without_ioz,
             "latitude": self.latitude,
             "longitude": self.longitude,
+            "history_sunny_days" : self.history_sunny_days,
+            "history_rainy_days" : self.history_rainy_days,
+            "history_foggy_days" : self.history_foggy_days,
+            "history_avg_aqi" : self.history_avg_aqi,
+            "history_avg_temp" : self.history_avg_temp
         }
