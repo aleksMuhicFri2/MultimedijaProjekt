@@ -79,8 +79,8 @@ def fetch_historical_data():
 
     # Save to CSV
     res_df = pd.DataFrame(history_results)
-    res_df.to_csv("data/municipality_history.csv", index=False)
-    print("DONE! Saved to data/municipality_history.csv")
+    res_df.to_csv("data/municipality_weather.csv", index=False)
+    print("DONE! Saved to data/municipality_weather.csv")
 
 if __name__ == "__main__":
     fetch_historical_data()

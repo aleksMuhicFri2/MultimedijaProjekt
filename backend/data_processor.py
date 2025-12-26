@@ -46,6 +46,35 @@ def process_population(raw_json, municipalities):
         else:
             m.population_old += count
 
+def calculate_demographics(municipalities):
+    """
+    Calculates the national average ratios and identifies the 
+    most significant demographic outlier for each municipality.
+    """
+    m_list = [m for m in municipalities.values() if (m.population_young + m.population_working + m.population_old) > 0]
+    count = len(m_list)
+    if count == 0: return
+
+    # Pass 1: Global Average Ratios
+    avg_y = sum(m.population_young / (m.population_young + m.population_working + m.population_old) for m in m_list) / count
+    avg_w = sum(m.population_working / (m.population_young + m.population_working + m.population_old) for m in m_list) / count
+    avg_o = sum(m.population_old / (m.population_young + m.population_working + m.population_old) for m in m_list) / count
+
+    # Pass 2: Identify Outliers
+    for m in m_list:
+        total = m.population_young + m.population_working + m.population_old
+        ry, rw, ro = m.population_young/total, m.population_working/total, m.population_old/total
+
+        # Compare local ratio to global average
+        diffs = {
+            "Mlado Prebivalstvo": (ry - avg_y) / avg_y,
+            "Delavno Prebivalstvo": (rw - avg_w) / avg_w,
+            "Staro Prebivalstvo": (ro - avg_o) / avg_o
+        }
+
+        # The key with the highest positive deviation is our tag
+        m.main_demographic = max(diffs, key=diffs.get)
+
 
 # ------------------------------
 # PRICES + RENT
@@ -107,20 +136,16 @@ def process_ioz(ioz_df, municipalities, year=2023):
 def process_lat_long(coords_data, municipalities):
     """Updates municipalities with lat/long from a list of dictionaries."""
     for item in coords_data:
-        # 1. Get the code and force it to be a 3-digit string (e.g., 61 -> "061")
         raw_code = item.get("code")
         code = str(raw_code).zfill(3) if raw_code is not None else None
         
-        # 2. If code matching fails, fallback to name normalization
         if not code or code not in municipalities:
             name = item.get("municipality") or item.get("name")
             code = NAME_TO_CODE.get(normalize_name(name))
             
-        # 3. If we found a valid municipality object, update its attributes
         if code and code in municipalities:
             m = municipalities[code]
             
-            # Use a helper to safely convert to float, defaulting to 0.0 if missing
             def safe_float(key_list):
                 for key in key_list:
                     val = item.get(key)
@@ -140,4 +165,53 @@ def process_history(history_data, municipalities):
             m.history_rainy_days = int(item.get("rainy_days_count", 0))
             m.history_foggy_days = int(item.get("foggy_days_count", 0))
             m.history_avg_aqi = float(item.get("avg_aqi", 0))
-            m.history_avg_temp = float(item.get("avg_temp_yearly", 0))            
+            m.history_avg_temp = float(item.get("avg_temp_yearly", 0))
+
+# ------------------------------
+# WEATHER SCORING (INDEX)
+# ------------------------------
+def calculate_weather_scores(municipalities):
+    """
+    Calculates a weather quality index from 1-10.
+    Formula: (diff_temp * 10) + (diff_sun * 5) - (diff_aqi * 5) - (diff_rain * 2)
+    """
+    m_list = list(municipalities.values())
+    count = len(m_list)
+    if count == 0:
+        return
+
+    # Pass 1: Calculate Global Averages
+    avg_temp = sum(m.history_avg_temp for m in m_list) / count
+    avg_sun  = sum(m.history_sunny_days for m in m_list) / count
+    avg_aqi  = sum(m.history_avg_aqi for m in m_list) / count
+    avg_rain = sum(m.history_rainy_days for m in m_list) / count
+
+    # Pass 2: Calculate Raw Scores
+    raw_scores = []
+    for m in m_list:
+        score = (
+            (m.history_avg_temp - avg_temp) * 10 +
+            (m.history_sunny_days - avg_sun) * 5 -
+            (m.history_avg_aqi - avg_aqi) * 5 -
+            (m.history_rainy_days - avg_rain) * 1.5
+        )
+        # Store raw score temporarily on the object to use in normalization pass
+        m._raw_weather_score = score
+        raw_scores.append(score)
+
+    # Pass 3: Normalize to 1-10 Scale
+    min_score = min(raw_scores)
+    max_score = max(raw_scores)
+
+    for m in m_list:
+        if max_score == min_score:
+            m.weather_index = 5.0  # Avoid division by zero
+        else:
+            # Scale from 1 to 10
+            # formula: 1 + (x - min) / (max - min) * (10 - 1)
+            normalized = 1 + ((m._raw_weather_score - min_score) / (max_score - min_score) * 9)
+            m.weather_index = round(normalized, 2)
+        
+        # Cleanup temporary attribute
+        if hasattr(m, '_raw_weather_score'):
+            del m._raw_weather_score

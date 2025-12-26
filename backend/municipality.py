@@ -11,6 +11,7 @@ class Municipality:
         self.population_young = 0
         self.population_working = 0
         self.population_old = 0
+        self.main_demographic = "Calculating..."
 
         # Prices
         self.avg_price_m2_apartment = None
@@ -37,6 +38,8 @@ class Municipality:
         self.history_avg_aqi = 0.0
         self.history_avg_temp = 0.0
 
+        self.weather_index = 0.0
+
     def to_dict(self):
         return {
             "code": self.code,
@@ -45,6 +48,7 @@ class Municipality:
             "population_young": self.population_young,
             "population_working": self.population_working,
             "population_old": self.population_old,
+            "main_demographic": self.main_demographic,
             "avg_price_m2_apartment": self.avg_price_m2_apartment,
             "avg_price_m2_house": self.avg_price_m2_house,
             "avg_rent_m2": self.avg_rent_m2,
@@ -61,5 +65,6 @@ class Municipality:
             "history_rainy_days" : self.history_rainy_days,
             "history_foggy_days" : self.history_foggy_days,
             "history_avg_aqi" : self.history_avg_aqi,
-            "history_avg_temp" : self.history_avg_temp
+            "history_avg_temp" : self.history_avg_temp,
+            "weather_index" : self.weather_index
         }

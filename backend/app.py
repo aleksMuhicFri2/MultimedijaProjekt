@@ -19,7 +19,9 @@ from data_processor import (
     process_prices,
     process_ioz,
     process_lat_long,
-    process_history
+    process_history,
+    calculate_weather_scores,
+    calculate_demographics
 )
 from surs_api import get_population_per_obcina
 
@@ -81,21 +83,28 @@ def fetch_and_process_data():
     if not pop_raw:
         raise RuntimeError("Population API returned nothing")
     
+    # Load Meta and Weather History
     coords_df = pd.read_csv("data/municipality_coords.csv")
     coords_list = coords_df.to_dict('records')
 
-    # Load History CSV
-    history_df = pd.read_csv("data/municipality_weather.csv")
+    history_df = pd.read_csv("data/municipality_weather.csv") # <--- Ensure name matches your file
     history_list = history_df.to_dict('records')
 
     # 5. Process & Merge
     logger.info("Merging data...")
     municipalities = init_municipalities()
+    
     process_population(pop_raw, municipalities)
     process_prices(prices_by_muni, rent_by_muni, municipalities)
     process_ioz(ioz_df, municipalities)
     process_lat_long(coords_list, municipalities)
     process_history(history_list, municipalities)
+
+    # 6. Final Calculation (Weather Index)
+    # This must happen LAST so that it has access to the merged history data
+    logger.info("Calculating normalized weather scores...")
+    calculate_weather_scores(municipalities)
+    calculate_demographics(municipalities)
     
     return municipalities
 
@@ -132,7 +141,6 @@ def load_all_data():
 # ------------------------------
 # INITIALIZATION CHECK
 # ------------------------------
-# Check if data exists on startup. If not, load it.
 if not es.indices.exists(index=INDEX) or es.count(index=INDEX)["count"] == 0:
     try:
         load_all_data()
@@ -145,13 +153,9 @@ if not es.indices.exists(index=INDEX) or es.count(index=INDEX)["count"] == 0:
 
 @app.route("/api/admin/reload-data", methods=["POST"])
 def admin_reload_data():
-    """
-    Admin endpoint to force a clean and reload of the index.
-    Useful for overwriting data without restarting the server.
-    """
     try:
         count = load_all_data()
-        return jsonify({"status": "success", "message": f"Reloaded {count} municipalities"}), 200
+        return jsonify({"status": "success", "message": f"Reloaded data for all municipalities"}), 200
     except Exception as e:
         logger.error(f"Reload failed: {e}")
         return jsonify({"error": str(e)}), 500
@@ -207,8 +211,7 @@ def travel_time():
             destinations=[destination],
             mode=mode
         )
-        # Gmaps API safety check
-        if not res["rows"]:
+        if not res["rows"] or not res["rows"][0]["elements"]:
              return {"error": "No routes found"}, 404
              
         element = res["rows"][0]["elements"][0]
