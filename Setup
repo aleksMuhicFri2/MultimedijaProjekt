@@ -84,6 +84,10 @@ GET /api/municipalities/regions
 
 GET /api/reload (clears and reloads Elasticsearch)
 
+USE THIS TO RELOAD ALL THE DATA IN THE DATABASE
+
+curl -X POST http://127.0.0.1:5000/api/admin/reload-data
+
 FRONTEND SETUP (REACT + VITE)
 
 Go to frontend folder:
