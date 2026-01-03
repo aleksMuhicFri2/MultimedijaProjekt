@@ -24,6 +24,7 @@ from data_processor import (
     calculate_demographics
 )
 from surs_api import get_population_per_obcina
+from search_engine import CitySearchEngine
 
 # ------------------------------
 # CONFIGURATION & SETUP
@@ -40,6 +41,9 @@ CORS(app)
 # Elasticsearch Connection
 es = elasticsearch.Elasticsearch(hosts=["http://localhost:9200"])
 INDEX = "municipalities"
+
+# Initialize search engine
+search_engine = CitySearchEngine()
 
 # ------------------------------
 # DATA LOADING LOGIC
@@ -81,18 +85,23 @@ def fetch_and_process_data():
     logger.info("Fetching population data from SURS API...")
     pop_raw = get_population_per_obcina()
     if not pop_raw:
-        raise RuntimeError("Population API returned nothing")
+        logger.warning("Population API returned empty list")
+    else:
+        logger.info(f"Population API returned {len(pop_raw)} entries")
+        logger.info(f"Sample population entry: {pop_raw[0] if pop_raw else 'None'}")
     
     # Load Meta and Weather History
     coords_df = pd.read_csv("data/municipality_coords.csv")
     coords_list = coords_df.to_dict('records')
 
-    history_df = pd.read_csv("data/municipality_weather.csv") # <--- Ensure name matches your file
+    history_df = pd.read_csv("data/municipality_weather.csv")
     history_list = history_df.to_dict('records')
 
     # 5. Process & Merge
     logger.info("Merging data...")
     municipalities = init_municipalities()
+    
+    logger.info(f"Initialized {len(municipalities)} municipalities")
     
     process_population(pop_raw, municipalities)
     process_prices(prices_by_muni, rent_by_muni, municipalities)
@@ -100,11 +109,23 @@ def fetch_and_process_data():
     process_lat_long(coords_list, municipalities)
     process_history(history_list, municipalities)
 
-    # 6. Final Calculation (Weather Index)
-    # This must happen LAST so that it has access to the merged history data
+    # 6. Final Calculation
     logger.info("Calculating normalized weather scores...")
     calculate_weather_scores(municipalities)
     calculate_demographics(municipalities)
+    
+    # Log a sample municipality to verify data
+    if municipalities:
+        sample_code = list(municipalities.keys())[0]
+        sample_muni = municipalities[sample_code]
+        logger.info(f"Sample municipality {sample_code} ({sample_muni.name}):")
+        logger.info(f"  Population Young: {sample_muni.population_young}")
+        logger.info(f"  Population Working: {sample_muni.population_working}")
+        logger.info(f"  Population Old: {sample_muni.population_old}")
+        logger.info(f"  Population Total: {sample_muni.population_total}")
+        logger.info(f"  Area: {sample_muni.area_km2} km²")
+        logger.info(f"  Density: {sample_muni.population_density}")
+        logger.info(f"  to_dict() area_km2: {sample_muni.to_dict().get('area_km2')}")
     
     return municipalities
 
@@ -178,6 +199,28 @@ def get_municipality_regions():
             region_by_code[code] = region
     return jsonify(region_by_code)
 
+@app.route("/api/municipalities/all", methods=["GET"])
+def get_all_municipalities():
+    """Get all municipalities for dropdown selections."""
+    try:
+        result = es.search(
+            index=INDEX,
+            body={
+                "query": {"match_all": {}},
+                "size": 500,
+                "_source": ["code", "name", "region"]
+            }
+        )
+        
+        cities = [hit["_source"] for hit in result["hits"]["hits"]]
+        # Sort by name
+        cities.sort(key=lambda x: x.get('name', ''))
+        
+        return jsonify({"cities": cities})
+    except Exception as e:
+        logger.error(f"Failed to fetch cities: {e}")
+        return jsonify({"error": str(e)}), 500
+
 # ------------------------------
 # GOOGLE MAPS ENDPOINTS
 # ------------------------------
@@ -226,6 +269,63 @@ def travel_time():
         }
     except Exception as e:
         return {"error": str(e)}, 500
+
+# ------------------------------
+# SEARCH & RANKING ENDPOINTS
+# ------------------------------
+
+@app.route("/api/search", methods=["POST"])
+def search_cities():
+    """Search and rank cities based on user criteria."""
+    try:
+        criteria = request.get_json()
+        
+        if not criteria:
+            return jsonify({"error": "No criteria provided"}), 400
+        
+        # Log search criteria for debugging
+        logger.info(f"Search criteria: workplace={criteria.get('workplace_city_code')}, "
+                   f"max_commute={criteria.get('max_commute_minutes')}, "
+                   f"search_type={criteria.get('search_type')}")
+        
+        # Get all municipalities from Elasticsearch
+        result = es.search(
+            index=INDEX,
+            body={"query": {"match_all": {}}, "size": 500}
+        )
+        
+        cities = [hit["_source"] for hit in result["hits"]["hits"]]
+        
+        # Run search and ranking
+        ranked_cities = search_engine.search_and_rank(cities, criteria)
+        
+        # Log top 5 results for debugging
+        if ranked_cities:
+            logger.info("Top 5 results:")
+            for i, result in enumerate(ranked_cities[:5]):
+                city = result['city']
+                logger.info(f"  {i+1}. {city['name']} - Score: {result['final_score']}, "
+                           f"Transport: {result['category_scores'].get('transportation')}")
+        
+        # Return top results
+        limit = criteria.get('limit', 20)
+        results = ranked_cities[:limit]
+        
+        return jsonify({
+            "total_matches": len(ranked_cities),
+            "results": results
+        })
+    
+    except Exception as e:
+        logger.error(f"Search failed: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/search/life-stages", methods=["GET"])
+def get_life_stages():
+    """Get available life stage options."""
+    return jsonify({
+        "life_stages": list(search_engine.life_stage_profiles.keys())
+    })
 
 if __name__ == "__main__":
     app.run(port=5000, debug=True)

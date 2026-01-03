@@ -1,71 +1,147 @@
 import React, { useEffect, useState } from "react";
 import SloveniaMap from "./components/SloveniaMap";
 import MunicipalityPanel from "./components/MunicipalityPanel";
+import AttributePicker from "./components/AttributePicker";
+import SearchResults from "./components/SearchResults";
+import "./App.css";
 
 function App() {
   const [selectedCode, setSelectedCode] = useState(null);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [viewMode, setViewMode] = useState('map'); // 'map' or 'search'
+  const [searchResults, setSearchResults] = useState(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState(null);
 
   useEffect(() => {
     if (!selectedCode) return;
 
     setLoading(true);
     setData(null);
+    setError(null);
 
     fetch(`http://localhost:5000/api/municipality/${selectedCode}`)
-      .then((r) => r.json())
-      .then(setData)
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then(responseData => {
+        console.log('Municipality data received:', responseData);
+        console.log('Population breakdown:', {
+          young: responseData.population_young,
+          working: responseData.population_working,
+          old: responseData.population_old,
+          total: responseData.population_total
+        });
+        console.log('Area:', responseData.area_km2);
+        console.log('Density:', responseData.population_density);
+        setData(responseData);
+      })
+      .catch(err => {
+        console.error('Failed to fetch municipality:', err);
+        setError(err.message);
+      })
       .finally(() => setLoading(false));
   }, [selectedCode]);
 
-  return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
-      {/* TITLE */}
-      <h1 style={{ margin: "0.5rem", textAlign: "center" }}>
-        Slovenian Municipalities
-      </h1>
+  const handleSearch = async (criteria) => {
+    console.log('Search criteria:', criteria);
+    
+    setSearchLoading(true);
+    setSearchError(null);
+    setSearchResults(null);
+    
+    try {
+      const response = await fetch('http://localhost:5000/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(criteria)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setSearchResults(data.results);
+    } catch (err) {
+      console.error('Search failed:', err);
+      setSearchError(err.message);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
 
-      {/* MAP – TOP (Takes remaining space) */}
-      <div
-        style={{
-          flex: 1,
-          width: "100%",
-          display: "flex",
-          // Align content to the right
-          justifyContent: "flex-end", 
-          // Center it vertically within the top space
-          alignItems: "center",       
-          position: "relative",
-          paddingRight: "50px", // A little breathing room from the right edge
-          boxSizing: "border-box"
-        }}
-      >
-        {/* Map Wrapper: Takes up ~2/3 (60-65%) of the width */}
-        <div style={{ width: "40%" }}>
+  const toggleView = () => {
+    setViewMode(prev => prev === 'map' ? 'search' : 'map');
+  };
+
+  return (
+    <div className="app-container">
+      {/* Enhanced Title Section */}
+      <header className="app-title">
+        <h1>Slovenian Municipalities Explorer</h1>
+        <p className="subtitle">Interactive Real Estate & Demographic Analysis</p>
+        
+        {/* View Toggle Button */}
+        <div className="view-toggle-container">
+          <button className="view-toggle-btn" onClick={toggleView}>
+            {viewMode === 'map' ? 'Find Best Municipality' : 'Back to Map'}
+          </button>
+        </div>
+      </header>
+
+      {/* Main Content with Modern Layout */}
+      <div className="main-content">
+        {/* Left Section - Toggle between Data and Attribute Picker */}
+        {viewMode === 'map' ? (
+          <div className="data-section">
+            {loading && (
+              <div className="loading-state">
+                <div className="spinner"></div>
+                <p>Loading municipality data...</p>
+              </div>
+            )}
+            
+            {error && (
+              <div className="error-state">
+                <span className="error-icon">⚠️</span>
+                <p>Error: {error}</p>
+              </div>
+            )}
+            
+            {!data && !loading && !error && (
+              <div className="empty-state">
+                <span className="icon">📍</span>
+                <h3>Select a Municipality</h3>
+                <p>Click on any region on the map to view detailed statistics</p>
+              </div>
+            )}
+            
+            {data && !error && <MunicipalityPanel data={data} />}
+          </div>
+        ) : (
+          <AttributePicker onSearch={handleSearch} />
+        )}
+
+        {/* Map Section - Top Right */}
+        <div className="map-section">
           <SloveniaMap
             selectedCode={selectedCode}
             onSelectMunicipality={setSelectedCode}
           />
         </div>
-      </div>
 
-      {/* DATA PANEL – BOTTOM */}
-      <div
-        style={{
-          height: "30vh",
-          width: "100%",
-          borderTop: "2px solid #ccc",
-          backgroundColor: "#f9f9f9",
-          overflowY: "auto",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        {loading && <p>Loading data...</p>}
-        {!data && !loading && <p style={{ color: "#666" }}>Select a municipality on the map</p>}
-        {data && <MunicipalityPanel data={data} />}
+        {/* Search Results - Bottom row, full width */}
+        {viewMode === 'search' && (
+          <SearchResults 
+            results={searchResults} 
+            loading={searchLoading} 
+            error={searchError} 
+          />
+        )}
       </div>
     </div>
   );
