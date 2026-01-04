@@ -38,20 +38,32 @@ function SearchPanel({ onSearch, onReset, searchResults, onSelectResult }) {
 
   // Show results if they exist
   if (searchResults && searchResults.topMatches) {
+<<<<<<< HEAD
     const topMatches = searchResults.topMatches.slice(0, 5);
 
+=======
+>>>>>>> 422758504451562949a3ea51caba1fdac5ede881
     return (
       <div className="search-panel">
         <div className="search-header">
           <h2>🎯 Best Matches Found!</h2>
           <p>
+<<<<<<< HEAD
             Showing top {topMatches.length} of {searchResults.topMatches.length}{" "}
             municipalities
+=======
+            Top {searchResults.topMatches.length} municipalities based on your
+            preferences
+>>>>>>> 422758504451562949a3ea51caba1fdac5ede881
           </p>
         </div>
 
         <div className="results-list">
+<<<<<<< HEAD
           {topMatches.map((result, index) => (
+=======
+          {searchResults.topMatches.map((result, index) => (
+>>>>>>> 422758504451562949a3ea51caba1fdac5ede881
             <div
               key={result.code}
               className={`result-card rank-${index + 1}`}

@@ -157,6 +157,7 @@ if (-not (Test-Path $Frontend)) {
 			Start-Sleep -Seconds 2
 		}
 
+<<<<<<< HEAD
 		Push-Location $Frontend
 
 		$nodeModules = Join-Path $Frontend 'node_modules'
@@ -189,6 +190,15 @@ if (-not (Test-Path $Frontend)) {
 
 		Pop-Location
 
+=======
+		$nodeModules = Join-Path $Frontend 'node_modules'
+		if (-not (Test-Path $nodeModules)) {
+			Write-Host "Installing frontend dependencies (npm install)..."
+			Push-Location $Frontend
+			npm install
+			Pop-Location
+		}
+>>>>>>> 422758504451562949a3ea51caba1fdac5ede881
 		Write-Host "Starting frontend dev server in a new PowerShell window..."
 		$cmd2 = "cd '$Frontend'; npm run dev"
 		Start-Process -FilePath 'powershell.exe' -ArgumentList '-NoExit', '-Command', $cmd2 -WorkingDirectory $Frontend

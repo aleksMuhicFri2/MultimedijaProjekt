@@ -1,5 +1,8 @@
 import React from "react";
+<<<<<<< HEAD
 import MunicipalityGraphs from "./MunicipalityGraphs";
+=======
+>>>>>>> 422758504451562949a3ea51caba1fdac5ede881
 
 function MunicipalityPanel({ data }) {
   if (!data) {
@@ -120,9 +123,12 @@ function MunicipalityPanel({ data }) {
         )}
       </div>
 
+<<<<<<< HEAD
       {/* Graphs show here (right panel), once `data` exists */}
       <MunicipalityGraphs data={data} />
 
+=======
+>>>>>>> 422758504451562949a3ea51caba1fdac5ede881
       {/* Debug Panel */}
       <details style={{ marginTop: '1.5rem', fontSize: '0.75rem', color: '#6B7280' }}>
         <summary style={{ cursor: 'pointer', padding: '0.5rem', background: '#F3F4F6', borderRadius: '8px' }}>

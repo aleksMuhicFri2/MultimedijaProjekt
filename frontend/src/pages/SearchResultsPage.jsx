@@ -1,9 +1,12 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+<<<<<<< HEAD
 import { Radar } from 'react-chartjs-2';
 import { Chart as ChartJS, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend } from 'chart.js';
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
+=======
+>>>>>>> 422758504451562949a3ea51caba1fdac5ede881
 
 function SearchResultsPage({ results, criteria }) {
   const navigate = useNavigate();
@@ -26,6 +29,7 @@ function SearchResultsPage({ results, criteria }) {
     );
   }
 
+<<<<<<< HEAD
   // Prepare comparison data for top 5 cities
   const topCities = results.slice(0, 5);
   
@@ -73,6 +77,8 @@ function SearchResultsPage({ results, criteria }) {
     })
   };
 
+=======
+>>>>>>> 422758504451562949a3ea51caba1fdac5ede881
   return (
     <div className="results-page">
       {/* Header */}
@@ -83,7 +89,11 @@ function SearchResultsPage({ results, criteria }) {
         <div className="results-header-content">
           <h1>Your Perfect City Matches</h1>
           <p className="results-subtitle">
+<<<<<<< HEAD
             Showing top {topCities.length} of {results.length} cities matching your criteria
+=======
+            Found {results.length} cities matching your criteria
+>>>>>>> 422758504451562949a3ea51caba1fdac5ede881
             {criteria?.workplace_city_code && (
               <span className="criteria-badge">
                 Near workplace
@@ -103,6 +113,7 @@ function SearchResultsPage({ results, criteria }) {
         </div>
       </div>
 
+<<<<<<< HEAD
       {/* Comparison Charts Section */}
       <div style={{ margin: '2rem 0', padding: '2rem', background: 'white', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
         <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '2rem', color: '#1F2933' }}>
@@ -127,6 +138,11 @@ function SearchResultsPage({ results, criteria }) {
       {/* Results List */}
       <div className="results-list">
         {topCities.map((result, index) => (
+=======
+      {/* Results List */}
+      <div className="results-list">
+        {results.map((result, index) => (
+>>>>>>> 422758504451562949a3ea51caba1fdac5ede881
           <DetailedResultCard key={result.city.code} result={result} rank={index + 1} />
         ))}
       </div>
@@ -166,18 +182,36 @@ function DetailedResultCard({ result, rank }) {
         </div>
       </div>
 
+<<<<<<< HEAD
       {/* Price Overview (API values only; no assumed m² totals) */}
       <div className="detailed-price-section">
         <h3>Pricing</h3>
 
         {!city.rent?.avg_rent_m2 && !city.prices?.apartment?.avg_price_m2 && !city.prices?.house?.avg_price_m2 ? (
           <div style={{ padding: '1rem', background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: '8px', color: '#92400E', textAlign: 'center' }}>
+=======
+      {/* Price Overview */}
+      <div className="detailed-price-section">
+        <h3>Estimated Costs</h3>
+        
+        {/* Check if we have ANY price data */}
+        {!city.rent?.avg_rent_m2 && !city.prices?.apartment?.avg_price_m2 && !city.prices?.house?.avg_price_m2 ? (
+          <div style={{ 
+            padding: '1rem', 
+            background: '#FEF3C7', 
+            border: '1px solid #FCD34D',
+            borderRadius: '8px',
+            color: '#92400E',
+            textAlign: 'center'
+          }}>
+>>>>>>> 422758504451562949a3ea51caba1fdac5ede881
             No pricing data available for this municipality
           </div>
         ) : (
           <div className="price-grid">
             {city.rent?.avg_rent_m2 && (
               <div className="price-item">
+<<<<<<< HEAD
                 <div className="price-label">Rent</div>
                 <div className="price-value">{city.rent.avg_rent_m2.toFixed(2)} €/m²</div>
                 {city.rent?.deals_count_rent !== undefined && (
@@ -203,6 +237,31 @@ function DetailedResultCard({ result, rank }) {
                 {city.prices?.house?.deals_count !== undefined && (
                   <div className="price-detail">Deals: {city.prices.house.deals_count}</div>
                 )}
+=======
+                <div className="price-label">Monthly Rent (60m²)</div>
+                <div className="price-value">
+                  ~{Math.round(city.rent.avg_rent_m2 * 60).toLocaleString()} €
+                </div>
+                <div className="price-detail">{city.rent.avg_rent_m2.toFixed(2)} €/m²</div>
+              </div>
+            )}
+            {city.prices?.apartment?.avg_price_m2 && (
+              <div className="price-item">
+                <div className="price-label">Buy Apartment (70m²)</div>
+                <div className="price-value">
+                  ~{Math.round(city.prices.apartment.avg_price_m2 * 70).toLocaleString()} €
+                </div>
+                <div className="price-detail">{Math.round(city.prices.apartment.avg_price_m2).toLocaleString()} €/m²</div>
+              </div>
+            )}
+            {city.prices?.house?.avg_price_m2 && (
+              <div className="price-item">
+                <div className="price-label">Buy House (100m²)</div>
+                <div className="price-value">
+                  ~{Math.round(city.prices.house.avg_price_m2 * 100).toLocaleString()} €
+                </div>
+                <div className="price-detail">{Math.round(city.prices.house.avg_price_m2).toLocaleString()} €/m²</div>
+>>>>>>> 422758504451562949a3ea51caba1fdac5ede881
               </div>
             )}
           </div>

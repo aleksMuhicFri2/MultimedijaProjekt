@@ -290,6 +290,7 @@
   color: #1F2933;
 }
 
+<<<<<<< HEAD
 /* Warning Line Style */
 .results-warning {
   margin: 0.5rem 0 0;
@@ -302,6 +303,8 @@
   font-weight: 600;
 }
 
+=======
+>>>>>>> 422758504451562949a3ea51caba1fdac5ede881
 /* Mobile Responsive */
 @media (max-width: 768px) {
   .result-card {

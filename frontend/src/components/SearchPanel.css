@@ -487,6 +487,7 @@
   transform: translateX(5px);
 }
 
+<<<<<<< HEAD
 /* Chart Container Styles */
 .results-chart {
   background: rgba(255, 255, 255, 0.95);
@@ -506,6 +507,8 @@
   height: 260px;
 }
 
+=======
+>>>>>>> 422758504451562949a3ea51caba1fdac5ede881
 /* Responsive */
 @media (max-width: 768px) {
   .search-panel {
