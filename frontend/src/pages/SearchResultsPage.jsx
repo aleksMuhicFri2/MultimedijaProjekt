@@ -5,9 +5,10 @@ import { Chart as ChartJS, RadialLinearScale, PointElement, LineElement, Filler,
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
-function SearchResultsPage({ results, criteria }) {
+function SearchResultsPage({ results, criteria, meta, suggestions }) {
   const navigate = useNavigate();
 
+  // No results - show helpful message
   if (!results || results.length === 0) {
     return (
       <div className="results-page">
@@ -16,11 +17,112 @@ function SearchResultsPage({ results, criteria }) {
             ← Back to Search
           </button>
           <div className="results-header-content">
-            <h1>Your Perfect City Matches</h1>
+            <h1>No Cities Match Your Criteria</h1>
             <p className="results-subtitle">
-              No cities found matching your criteria. Please adjust your search.
+              Your requirements are too strict. Here's what happened:
             </p>
           </div>
+        </div>
+
+        {/* Filter breakdown */}
+        {meta && (
+          <div style={{ 
+            margin: '2rem auto', 
+            maxWidth: '600px', 
+            padding: '1.5rem', 
+            background: '#FEF3C7', 
+            borderRadius: '12px',
+            border: '1px solid #FCD34D'
+          }}>
+            <h3 style={{ color: '#92400E', marginBottom: '1rem' }}>📊 Filter Breakdown</h3>
+            <div style={{ display: 'grid', gap: '0.5rem', fontSize: '0.95rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Total municipalities:</span>
+                <strong>{meta.total_cities || 212}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>After budget & commute filters:</span>
+                <strong style={{ color: meta.after_budget_commute_filter === 0 ? '#DC2626' : '#059669' }}>
+                  {meta.after_budget_commute_filter || 0}
+                </strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>After minimum score requirements:</span>
+                <strong style={{ color: meta.after_score_filter === 0 ? '#DC2626' : '#059669' }}>
+                  {meta.after_score_filter || 0}
+                </strong>
+              </div>
+            </div>
+
+            {/* Show applied thresholds */}
+            {meta.thresholds_applied && Object.keys(meta.thresholds_applied).length > 0 && (
+              <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #FCD34D' }}>
+                <h4 style={{ color: '#92400E', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                  Your minimum requirements:
+                </h4>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  {Object.entries(meta.thresholds_applied).map(([category, threshold]) => {
+                    const names = {
+                      affordability: 'Affordability',
+                      market_activity: 'Market Activity',
+                      population_vitality: 'Demographics',
+                      healthcare: 'Healthcare',
+                      housing_diversity: 'Housing Options',
+                      commute: 'Commute'
+                    };
+                    return (
+                      <span key={category} style={{
+                        background: '#FDE68A',
+                        padding: '0.25rem 0.75rem',
+                        borderRadius: '999px',
+                        fontSize: '0.85rem',
+                        color: '#92400E'
+                      }}>
+                        {names[category] || category} ≥ {threshold}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Suggestions */}
+        {suggestions && suggestions.length > 0 && (
+          <div style={{ 
+            margin: '1rem auto', 
+            maxWidth: '600px', 
+            padding: '1.5rem', 
+            background: '#DBEAFE', 
+            borderRadius: '12px',
+            border: '1px solid #93C5FD'
+          }}>
+            <h3 style={{ color: '#1E40AF', marginBottom: '1rem' }}>💡 Suggestions</h3>
+            <ul style={{ margin: 0, paddingLeft: '1.5rem', color: '#1E3A8A' }}>
+              {suggestions.map((suggestion, i) => (
+                <li key={i} style={{ marginBottom: '0.5rem' }}>{suggestion}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+          <button 
+            className="back-button-inline" 
+            onClick={() => navigate('/')}
+            style={{ 
+              background: '#2563EB', 
+              color: 'white', 
+              padding: '0.75rem 2rem',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '1rem'
+            }}
+          >
+            ← Adjust Your Search
+          </button>
         </div>
       </div>
     );
@@ -144,9 +246,9 @@ function DetailedResultCard({ result, rank }) {
   };
 
   const getRankBadge = (rank) => {
-    if (rank === 1) return { emoji: '', text: 'Best Match' };
-    if (rank === 2) return { emoji: '', text: 'Second Best' };
-    if (rank === 3) return { emoji: '', text: 'Third Best' };
+    if (rank === 1) return { emoji: '🥇', text: 'Best Match' };
+    if (rank === 2) return { emoji: '🥈', text: 'Second Best' };
+    if (rank === 3) return { emoji: '🥉', text: 'Third Best' };
     return { emoji: `#${rank}`, text: `Rank ${rank}` };
   };
 
@@ -166,42 +268,42 @@ function DetailedResultCard({ result, rank }) {
         </div>
       </div>
 
-      {/* Price Overview (API values only; no assumed m² totals) */}
+      {/* Price Overview */}
       <div className="detailed-price-section">
-        <h3>Pricing</h3>
+        <h3>💰 Pricing</h3>
 
-        {!city.rent?.avg_rent_m2 && !city.prices?.apartment?.avg_price_m2 && !city.prices?.house?.avg_price_m2 ? (
+        {!city.avg_rent_m2 && !city.avg_price_m2_apartment && !city.avg_price_m2_house ? (
           <div style={{ padding: '1rem', background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: '8px', color: '#92400E', textAlign: 'center' }}>
             No pricing data available for this municipality
           </div>
         ) : (
           <div className="price-grid">
-            {city.rent?.avg_rent_m2 && (
+            {city.avg_rent_m2 && (
               <div className="price-item">
-                <div className="price-label">Rent</div>
-                <div className="price-value">{city.rent.avg_rent_m2.toFixed(2)} €/m²</div>
-                {city.rent?.deals_count_rent !== undefined && (
-                  <div className="price-detail">Deals: {city.rent.deals_count_rent}</div>
+                <div className="price-label">🏠 Rent</div>
+                <div className="price-value">{city.avg_rent_m2.toFixed(2)} €/m²</div>
+                {city.deals_rent !== undefined && (
+                  <div className="price-detail">{city.deals_rent} deals</div>
                 )}
               </div>
             )}
 
-            {city.prices?.apartment?.avg_price_m2 && (
+            {city.avg_price_m2_apartment && (
               <div className="price-item">
-                <div className="price-label">Apartment</div>
-                <div className="price-value">{Math.round(city.prices.apartment.avg_price_m2).toLocaleString()} €/m²</div>
-                {city.prices?.apartment?.deals_count !== undefined && (
-                  <div className="price-detail">Deals: {city.prices.apartment.deals_count}</div>
+                <div className="price-label">🏢 Apartment</div>
+                <div className="price-value">{Math.round(city.avg_price_m2_apartment).toLocaleString()} €/m²</div>
+                {city.deals_sale_apartment !== undefined && (
+                  <div className="price-detail">{city.deals_sale_apartment} deals</div>
                 )}
               </div>
             )}
 
-            {city.prices?.house?.avg_price_m2 && (
+            {city.avg_price_m2_house && (
               <div className="price-item">
-                <div className="price-label">House</div>
-                <div className="price-value">{Math.round(city.prices.house.avg_price_m2).toLocaleString()} €/m²</div>
-                {city.prices?.house?.deals_count !== undefined && (
-                  <div className="price-detail">Deals: {city.prices.house.deals_count}</div>
+                <div className="price-label">🏡 House</div>
+                <div className="price-value">{Math.round(city.avg_price_m2_house).toLocaleString()} €/m²</div>
+                {city.deals_sale_house !== undefined && (
+                  <div className="price-detail">{city.deals_sale_house} deals</div>
                 )}
               </div>
             )}
@@ -210,84 +312,83 @@ function DetailedResultCard({ result, rank }) {
       </div>
 
       {/* Commute Info */}
-      {commute_info && (
+      {commute_info && !commute_info.is_same_city && (
         <div className="detailed-commute-section">
-          <h3>Commute to {commute_info.workplace_name}</h3>
+          <h3>🚗 Commute to {commute_info.workplace_name}</h3>
           <div className="commute-grid">
             <div className="commute-stat">
-              <div className="commute-icon">Distance</div>
               <div className="commute-value">{commute_info.distance_km} km</div>
               <div className="commute-label">Distance</div>
             </div>
             <div className="commute-stat">
-              <div className="commute-icon">One Way</div>
-              <div className="commute-value">{commute_info.one_way_time} min</div>
+              <div className="commute-value">{Math.round(commute_info.one_way_time)} min</div>
               <div className="commute-label">One Way</div>
             </div>
             <div className="commute-stat highlight">
-              <div className="commute-icon">Daily</div>
-              <div className="commute-value">{commute_info.daily_time} min</div>
+              <div className="commute-value">{Math.round(commute_info.daily_time)} min</div>
               <div className="commute-label">Daily Total</div>
             </div>
           </div>
+          {commute_info.source === 'google_maps' && (
+            <div style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '0.5rem', textAlign: 'center' }}>
+              📍 Via Google Maps
+            </div>
+          )}
         </div>
       )}
 
       {/* Demographics */}
       <div className="detailed-demographics-section">
-        <h3>Population</h3>
+        <h3>👥 Population</h3>
         <div className="demographics-grid">
           <div className="demo-stat">
-            <div className="demo-icon">Young</div>
-            <div className="demo-value">{city.population_young?.toLocaleString()}</div>
+            <div className="demo-value">{city.population_young?.toLocaleString() || 'N/A'}</div>
             <div className="demo-label">Young (0-14)</div>
           </div>
           <div className="demo-stat">
-            <div className="demo-icon">Working</div>
-            <div className="demo-value">{city.population_working?.toLocaleString()}</div>
+            <div className="demo-value">{city.population_working?.toLocaleString() || 'N/A'}</div>
             <div className="demo-label">Working (15-64)</div>
           </div>
           <div className="demo-stat">
-            <div className="demo-icon">Old</div>
-            <div className="demo-value">{city.population_old?.toLocaleString()}</div>
-            <div className="demo-label">Old (65+)</div>
+            <div className="demo-value">{city.population_old?.toLocaleString() || 'N/A'}</div>
+            <div className="demo-label">Elderly (65+)</div>
           </div>
           <div className="demo-stat total">
-            <div className="demo-icon">Total</div>
-            <div className="demo-value">{city.population_total?.toLocaleString()}</div>
-            <div className="demo-label">Total Population</div>
+            <div className="demo-value">{city.population_total?.toLocaleString() || 'N/A'}</div>
+            <div className="demo-label">Total</div>
           </div>
         </div>
       </div>
 
       {/* Category Scores */}
       <div className="detailed-scores-section">
-        <h3>Score Breakdown</h3>
+        <h3>📊 Score Breakdown</h3>
         <div className="scores-list">
-          {Object.entries(category_scores).map(([category, score]) => {
+          {Object.entries(category_scores || {}).map(([category, score]) => {
             if (score === null || score === undefined) return null;
 
             const categoryInfo = {
-              'affordability': { icon: '', name: 'Affordability' },
-              'demographics': { icon: '', name: 'Demographics Match' },
-              'transportation': { icon: '', name: 'Transportation' },
-              'healthcare': { icon: '', name: 'Healthcare' },
-              'education': { icon: '', name: 'Education' },
-              'weather': { icon: '', name: 'Weather' },
-              'price_diversity': { icon: '', name: 'Housing Options' },
-              'market_liquidity': { icon: '', name: 'Market Activity' }
-            }[category] || { icon: '', name: category };
+              'affordability': { icon: '💰', name: 'Affordability' },
+              'market_activity': { icon: '📈', name: 'Market Activity' },
+              'population_vitality': { icon: '👥', name: 'Demographics' },
+              'healthcare': { icon: '🏥', name: 'Healthcare' },
+              'housing_diversity': { icon: '🏠', name: 'Housing Options' },
+              'commute': { icon: '🚗', name: 'Commute' }
+            }[category] || { icon: '📌', name: category };
 
             return (
               <div key={category} className="score-item">
                 <div className="score-item-header">
-                  <span className="score-item-name">{categoryInfo.name}</span>
+                  <span className="score-item-name">{categoryInfo.icon} {categoryInfo.name}</span>
                   <span className="score-item-value" style={{ color: getScoreColor(score) }}>
-                    {score}/100
+                    {Math.round(score)}/100
                   </span>
                 </div>
                 <div className="score-item-bar">
-                  <div className="score-item-fill" style={{ width: `${score}%`, backgroundColor: getScoreColor(score) }}></div>
+                  <div 
+                    className="score-item-fill" 
+                    style={{ width: `${score}%`, backgroundColor: getScoreColor(score) }}
+                  />
                 </div>
               </div>
             );
@@ -295,30 +396,22 @@ function DetailedResultCard({ result, rank }) {
         </div>
       </div>
 
-      {/* Market Info */}
-      {(city.prices?.apartment?.deals_count || city.rent?.deals_count_rent) && (
-        <div className="detailed-market-section">
-          <h3>Market Activity</h3>
-          <div className="market-stats">
-            {city.prices?.apartment?.deals_count !== undefined && (
-              <div className="market-stat">
-                <span>Apartment Deals:</span>
-                <strong>{city.prices.apartment.deals_count}</strong>
-              </div>
-            )}
-            {city.prices?.house?.deals_count !== undefined && (
-              <div className="market-stat">
-                <span>House Deals:</span>
-                <strong>{city.prices.house.deals_count}</strong>
-              </div>
-            )}
-            {city.rent?.deals_count_rent !== undefined && (
-              <div className="market-stat">
-                <span>Rental Deals:</span>
-                <strong>{city.rent.deals_count_rent}</strong>
-              </div>
-            )}
-          </div>
+      {/* Additional Info */}
+      {city.area_km2 && (
+        <div style={{ 
+          marginTop: '1rem', 
+          padding: '0.75rem', 
+          background: '#F3F4F6', 
+          borderRadius: '8px',
+          fontSize: '0.9rem',
+          color: '#4B5563'
+        }}>
+          <strong>Area:</strong> {city.area_km2.toFixed(1)} km² 
+          {city.population_density && (
+            <span style={{ marginLeft: '1rem' }}>
+              <strong>Density:</strong> {Math.round(city.population_density)} people/km²
+            </span>
+          )}
         </div>
       )}
     </div>

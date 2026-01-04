@@ -294,7 +294,8 @@ def search_cities():
         # Log search criteria for debugging
         logger.info(f"Search criteria: workplace={criteria.get('workplace_city_code')}, "
                    f"max_commute={criteria.get('max_commute_minutes')}, "
-                   f"search_type={criteria.get('search_type')}")
+                   f"search_type={criteria.get('search_type')}, "
+                   f"weights={criteria.get('weights')}")
         
         # Get all municipalities from Elasticsearch
         result = es.search(
@@ -319,23 +320,56 @@ def search_cities():
         
         workplace_found = workplace is not None
 
-        # Run the search
-        ranked_cities = search_engine.search_and_rank(
+        # Run the search (now returns tuple with meta)
+        ranked_cities, search_meta = search_engine.search_and_rank(
             cities, 
             {**criteria, "workplace_city_code": workplace_code or ""}
         )
 
         # Determine if commute filter was actually applied
-        # It's applied if we found the workplace (coordinates are no longer required)
         commute_applied = bool(commute_requested and workplace_found)
 
-        raw_limit = criteria.get('limit', 5)
+        raw_limit = criteria.get('limit', 10)
         try:
             limit = max(1, min(int(raw_limit), 100))
         except Exception:
-            limit = 5
+            limit = 10
 
         results = ranked_cities[:limit]
+
+        # Build suggestions if no results
+        suggestions = []
+        if len(ranked_cities) == 0:
+            if search_meta.get("after_hard_filters", 0) == 0:
+                suggestions.append("Try increasing your budget or reducing desired space (m²)")
+                if commute_requested:
+                    suggestions.append("Consider increasing max commute time or removing workplace filter")
+            elif search_meta.get("after_score_filters", 0) == 0:
+                # Cities passed hard filters but failed score thresholds
+                score_stats = search_meta.get("score_filter_stats", {}).get("details", {})
+                thresholds = search_meta.get("thresholds_applied", {})
+                
+                # Find which categories filtered out the most cities
+                if score_stats:
+                    sorted_filters = sorted(score_stats.items(), key=lambda x: x[1], reverse=True)
+                    top_blockers = [cat for cat, count in sorted_filters[:3] if count > 0]
+                    
+                    category_names = {
+                        "affordability": "Affordability",
+                        "market_activity": "Market Activity",
+                        "population_vitality": "Demographics",
+                        "healthcare": "Healthcare",
+                        "housing_diversity": "Housing Options",
+                        "commute": "Commute"
+                    }
+                    
+                    for blocker in top_blockers:
+                        threshold = thresholds.get(blocker, 0)
+                        name = category_names.get(blocker, blocker)
+                        suggestions.append(f"Lower your {name} requirement (currently needs score ≥{threshold})")
+                
+                if not suggestions:
+                    suggestions.append("Try lowering some of your priority weights")
 
         return jsonify({
             "total_matches": len(ranked_cities),
@@ -348,7 +382,14 @@ def search_cities():
                 "commute_filter_requested": commute_requested,
                 "commute_filter_applied": commute_applied,
                 "google_maps_available": search_engine._gmaps_calls_this_search > 0 if hasattr(search_engine, '_gmaps_calls_this_search') else False,
-            }
+                "total_cities": search_meta.get("total_input", 0),
+                "after_budget_commute_filter": search_meta.get("after_hard_filters", 0),
+                "after_score_filter": search_meta.get("after_score_filters", 0),
+                "thresholds_applied": search_meta.get("thresholds_applied", {}),
+                "filter_stats": search_meta.get("filter_stats", {}),
+                "score_filter_stats": search_meta.get("score_filter_stats", {}),
+            },
+            "suggestions": suggestions
         })
 
     except Exception as e:

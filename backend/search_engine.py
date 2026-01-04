@@ -785,28 +785,92 @@ class CitySearchEngine:
         
         return round(self._clamp(score, 0, 100), 2)
     
-    def score_housing_diversity(self, city: Dict) -> float:
+    def score_housing_diversity(self, city: Dict, stats: Dict = None) -> float:
         """
         Calculate housing diversity score (0-100).
         
-        Measures availability of different property types:
-        - Has apartment data: +30 points
-        - Has house data: +30 points
-        - Has rental data: +30 points
-        - Has market activity (>10 deals total): +10 points
+        Improved scoring based on actual market depth:
+        1. Property type availability (up to 30 points)
+        2. Market depth - number of deals per type (up to 40 points)
+        3. Price range diversity (up to 30 points)
+        
+        This creates more variance than simple binary checks.
         """
-        score = 0
+        score = 0.0
         
-        if self._get_price_m2(city, "apartment") is not None:
-            score += 30
-        if self._get_price_m2(city, "house") is not None:
-            score += 30
-        if self._get_rent_m2(city) is not None:
-            score += 30
-        if self._get_total_deals(city) >= 10:
-            score += 10
+        # 1. Property type availability (up to 30 points)
+        types_available = 0
+        has_apartment = self._get_price_m2(city, "apartment") is not None
+        has_house = self._get_price_m2(city, "house") is not None
+        has_rent = self._get_rent_m2(city) is not None
         
-        return float(score)
+        if has_apartment:
+            types_available += 1
+        if has_house:
+            types_available += 1
+        if has_rent:
+            types_available += 1
+        
+        # 0 types = 0, 1 type = 10, 2 types = 20, 3 types = 30
+        type_score = types_available * 10
+        score += type_score
+        
+        # 2. Market depth - number of deals (up to 40 points)
+        # More deals = more options to choose from
+        apt_deals = self._get_sale_deals(city, "apartment")
+        house_deals = self._get_sale_deals(city, "house")
+        rent_deals = self._get_rent_deals(city)
+        total_deals = apt_deals + house_deals + rent_deals
+        
+        # Use logarithmic scaling for deals (diminishing returns)
+        # 0 deals = 0, 1-5 = 10, 6-20 = 20, 21-50 = 30, 51+ = 40
+        if total_deals == 0:
+            deal_score = 0
+        elif total_deals <= 5:
+            deal_score = 10
+        elif total_deals <= 20:
+            deal_score = 10 + ((total_deals - 5) / 15) * 10  # 10-20
+        elif total_deals <= 50:
+            deal_score = 20 + ((total_deals - 20) / 30) * 10  # 20-30
+        elif total_deals <= 100:
+            deal_score = 30 + ((total_deals - 50) / 50) * 10  # 30-40
+        else:
+            deal_score = 40
+        
+        score += deal_score
+        
+        # 3. Balance across property types (up to 30 points)
+        # A market with ONLY apartments scores lower than one with mix
+        if total_deals > 0:
+            # Calculate entropy-like balance score
+            proportions = []
+            if apt_deals > 0:
+                proportions.append(apt_deals / total_deals)
+            if house_deals > 0:
+                proportions.append(house_deals / total_deals)
+            if rent_deals > 0:
+                proportions.append(rent_deals / total_deals)
+            
+            if len(proportions) >= 2:
+                # More balanced = higher score
+                # Perfect balance with 3 types would be 0.33, 0.33, 0.33
+                # Use inverse of max proportion as balance indicator
+                max_prop = max(proportions)
+                min_possible_max = 1.0 / len(proportions)  # Best case
+                
+                # If max_prop is close to min_possible_max, market is balanced
+                # If max_prop is 1.0, market is completely unbalanced
+                balance_ratio = 1 - ((max_prop - min_possible_max) / (1 - min_possible_max))
+                balance_score = balance_ratio * 30
+            elif len(proportions) == 1:
+                # Only one type of property - less diversity
+                balance_score = 10
+            else:
+                balance_score = 0
+            
+            score += balance_score
+        
+        return round(self._clamp(score, 0, 100), 2)
     
     # =========================================================================
     # MAIN SCORING FUNCTION
@@ -831,7 +895,7 @@ class CitySearchEngine:
             "population_vitality": self.score_population_vitality(city, criteria, stats),
             "healthcare": self.score_healthcare(city, stats),
             "commute": self.score_commute(city, criteria, stats, workplace_city),
-            "housing_diversity": self.score_housing_diversity(city),
+            "housing_diversity": self.score_housing_diversity(city, stats),
         }
     
     def calculate_final_score(self, category_scores: Dict, criteria: Dict) -> float:
@@ -1015,25 +1079,115 @@ class CitySearchEngine:
         return filtered, filter_stats
     
     # =========================================================================
+    # MINIMUM SCORE FILTERING
+    # =========================================================================
+    
+    def get_minimum_thresholds(self, criteria: Dict) -> Dict[str, float]:
+        """
+        Convert user weights to minimum score thresholds.
+        
+        Weight 0 = no minimum requirement
+        Weight 1-10 = minimum score of weight * 10 (so weight 5 = min score 50)
+        
+        This allows users to say "I need at least X level of this category"
+        """
+        user_weights = criteria.get("weights", {}) or {}
+        
+        # Map frontend weight names to backend score names
+        weight_mapping = {
+            "affordability": "affordability",
+            "demographics": "population_vitality",
+            "transportation": "commute",
+            "healthcare": "healthcare",
+            "price_diversity": "housing_diversity",
+            "market_liquidity": "market_activity",
+        }
+        
+        thresholds = {}
+        for frontend_key, backend_key in weight_mapping.items():
+            weight = self._num(user_weights.get(frontend_key, 0)) or 0
+            if weight > 0:
+                # Convert weight (1-10) to minimum score (10-100)
+                thresholds[backend_key] = weight * 10
+        
+        return thresholds
+    
+    def filter_by_minimum_scores(self, scored_cities: List[Dict], 
+                                  thresholds: Dict[str, float]) -> Tuple[List[Dict], Dict]:
+        """
+        Filter cities that don't meet minimum score thresholds.
+        
+        Returns:
+            (filtered_cities, filter_stats)
+        """
+        if not thresholds:
+            return scored_cities, {"filtered_by_score": 0, "details": {}}
+        
+        filtered = []
+        filter_stats = {
+            "filtered_by_score": 0,
+            "details": {category: 0 for category in thresholds.keys()}
+        }
+        
+        for result in scored_cities:
+            scores = result.get("category_scores", {})
+            passes_all = True
+            failed_category = None
+            
+            for category, min_score in thresholds.items():
+                actual_score = scores.get(category)
+                
+                # Skip categories with no score (None)
+                if actual_score is None:
+                    continue
+                
+                if actual_score < min_score:
+                    passes_all = False
+                    failed_category = category
+                    filter_stats["details"][category] += 1
+                    break
+            
+            if passes_all:
+                filtered.append(result)
+            else:
+                filter_stats["filtered_by_score"] += 1
+        
+        return filtered, filter_stats
+
+    # =========================================================================
     # MAIN SEARCH FUNCTION (with rate limiting)
     # =========================================================================
     
-    def search_and_rank(self, cities: List[Dict], criteria: Dict) -> List[Dict]:
+    def search_and_rank(self, cities: List[Dict], criteria: Dict) -> Tuple[List[Dict], Dict]:
         """
         Main search function with rate-limited Google Maps API calls.
+        
+        Returns:
+            (scored_cities, search_meta) - includes filter statistics
         """
         logger.info(f"Starting search with {len(cities)} cities")
+        
+        search_meta = {
+            "total_input": len(cities),
+            "after_hard_filters": 0,
+            "after_score_filters": 0,
+            "filter_stats": {},
+            "score_filter_stats": {},
+            "thresholds_applied": {}
+        }
         
         # Reset Google Maps API counter for this search
         self._reset_gmaps_counter()
         
         # Step 1: Filter (uses Haversine, not Google Maps)
         filtered_cities, filter_stats = self.filter_cities(cities, criteria)
-        logger.info(f"After filtering: {len(filtered_cities)} cities")
+        search_meta["after_hard_filters"] = len(filtered_cities)
+        search_meta["filter_stats"] = filter_stats
+        logger.info(f"After hard filtering: {len(filtered_cities)} cities")
         logger.info(f"Filter stats: {filter_stats}")
         
         if not filtered_cities:
-            return []
+            return [], search_meta
         
         # Step 2: Get workplace city
         workplace_city = None
@@ -1054,11 +1208,9 @@ class CitySearchEngine:
                 final_score = self.calculate_final_score(scores, criteria)
                 
                 # Calculate commute info for display
-                # Only use Google Maps for top candidates (after initial scoring)
                 commute_info = None
                 if workplace_city:
                     has_car = bool(criteria.get("has_car", False))
-                    # Use cached commute time from filtering, don't call Google Maps yet
                     commute_info = self.calculate_commute_to_city(city, workplace_city, has_car, use_gmaps=False)
                 
                 scored_cities.append({
@@ -1071,31 +1223,41 @@ class CitySearchEngine:
                 logger.error(f"Error scoring city {city.get('name')}: {e}")
                 continue
         
-        # Step 5: Sort by final score
+        # Step 5: Apply minimum score thresholds based on weights
+        thresholds = self.get_minimum_thresholds(criteria)
+        search_meta["thresholds_applied"] = thresholds
+        
+        if thresholds:
+            logger.info(f"Applying minimum score thresholds: {thresholds}")
+            scored_cities, score_filter_stats = self.filter_by_minimum_scores(scored_cities, thresholds)
+            search_meta["score_filter_stats"] = score_filter_stats
+            logger.info(f"After score filtering: {len(scored_cities)} cities (removed {score_filter_stats['filtered_by_score']})")
+        
+        search_meta["after_score_filters"] = len(scored_cities)
+        
+        # Step 6: Sort by final score
         scored_cities.sort(key=lambda x: x["final_score"], reverse=True)
         
-        # Step 6: Use Google Maps API only for top 5 results (to save credits)
+        # Step 7: Use Google Maps API only for top 5 results (to save credits)
         if workplace_city and GOOGLE_MAPS_AVAILABLE:
             has_car = bool(criteria.get("has_car", False))
             for result in scored_cities[:5]:
                 city = result["city"]
-                # Try Google Maps for accurate commute time
                 commute_info = self.calculate_commute_to_city(city, workplace_city, has_car, use_gmaps=True)
                 if commute_info:
                     result["commute_info"] = commute_info
-                    # Update commute score with accurate time
                     if commute_info["source"] == "google_maps":
                         result["category_scores"]["commute"] = self.score_commute(
                             city, criteria, stats, workplace_city
                         )
         
-        # Step 7: Add percentile rankings
+        # Step 8: Add percentile rankings
         all_scores = [c["final_score"] for c in scored_cities]
         for result in scored_cities:
             result["ranking"] = self.calculate_percentile_rank(result["final_score"], all_scores)
         
         logger.info(f"Returning {len(scored_cities)} scored cities (Google Maps calls: {self._gmaps_calls_this_search})")
-        return scored_cities
+        return scored_cities, search_meta
     
     # =========================================================================
     # SPIDER GRAPH DATA GENERATION

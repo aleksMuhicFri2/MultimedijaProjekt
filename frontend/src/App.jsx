@@ -58,7 +58,7 @@ function App() {
       const response = await fetch('http://localhost:5000/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(criteria)
+        body: JSON.stringify({ ...criteria, limit: 20 })
       });
       
       if (!response.ok) {
@@ -68,6 +68,10 @@ function App() {
       const data = await response.json();
       setSearchResults(data.results);
       setSearchMeta(data.meta || null);
+      // Store suggestions from backend
+      if (data.suggestions) {
+        setSearchMeta(prev => ({ ...prev, suggestions: data.suggestions }));
+      }
     } catch (err) {
       console.error('Search failed:', err);
       setSearchError(err.message);
@@ -140,6 +144,7 @@ function App() {
               loading={searchLoading} 
               error={searchError} 
               meta={searchMeta}
+              suggestions={searchMeta?.suggestions}
             />
           </>
         )}

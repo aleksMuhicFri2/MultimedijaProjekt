@@ -1,0 +1,11 @@
+# Add all files
+git add .
+
+# Commit the files
+git commit -m "Initial commit - upload all project files"
+
+# Push to GitHub (main or master branch)
+git push -u origin main
+# If that fails, try: git push -u origin master
+
+krneki
