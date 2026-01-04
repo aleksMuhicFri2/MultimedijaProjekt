@@ -227,7 +227,6 @@ def process_history(history_list, municipalities):
 def calculate_weather_scores(municipalities):
     """Calculate normalized weather scores."""
     logger.info("Calculating weather scores...")
-<<<<<<< HEAD
 
     # Support the current schema coming from data/municipality_weather.csv
     temps = []
@@ -296,48 +295,6 @@ def calculate_weather_scores(municipalities):
             0.10 * norm_lo(f, fmin, fmax)
         )
         muni.weather_score = round(max(0.0, min(1.0, score01)) * 100.0, 2)
-=======
-    
-    all_temps = []
-    all_precips = []
-    
-    # Collect all values for normalization
-    for muni in municipalities.values():
-        if muni.weather_history:
-            for record in muni.weather_history:
-                if "temperature" in record:
-                    all_temps.append(record["temperature"])
-                if "precipitation" in record:
-                    all_precips.append(record["precipitation"])
-    
-    if not all_temps or not all_precips:
-        logger.warning("No weather data available for scoring")
-        return
-    
-    temp_min, temp_max = min(all_temps), max(all_temps)
-    precip_min, precip_max = min(all_precips), max(all_precips)
-    
-    # Calculate scores
-    for muni in municipalities.values():
-        if not muni.weather_history:
-            continue
-        
-        scores = []
-        for record in muni.weather_history:
-            temp = record.get("temperature")
-            precip = record.get("precipitation")
-            
-            if temp is not None and precip is not None:
-                # Normalize (higher temp = better, lower precip = better)
-                temp_score = (temp - temp_min) / (temp_max - temp_min) if temp_max > temp_min else 0.5
-                precip_score = 1 - ((precip - precip_min) / (precip_max - precip_min)) if precip_max > precip_min else 0.5
-                
-                # Weighted average
-                scores.append(0.6 * temp_score + 0.4 * precip_score)
-        
-        if scores:
-            muni.weather_score = round(sum(scores) / len(scores) * 100, 2)
->>>>>>> 422758504451562949a3ea51caba1fdac5ede881
 
 def calculate_demographics(municipalities):
     """Calculate demographic statistics."""

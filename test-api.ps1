@@ -29,7 +29,6 @@ try {
     Write-Host "   ✗ FAILED - $_" -ForegroundColor Red
 }
 
-<<<<<<< HEAD
 # Test 3: Search endpoint (checks category scores are not constant)
 Write-Host "`n3. Testing POST /api/search..."
 try {
@@ -66,8 +65,6 @@ try {
     Write-Host "   ✗ FAILED - $_" -ForegroundColor Red
 }
 
-=======
->>>>>>> 422758504451562949a3ea51caba1fdac5ede881
 Write-Host "`n=== Frontend Check ===`n"
 Write-Host "If white screen persists:"
 Write-Host "1. Check browser console (F12) for errors like:"

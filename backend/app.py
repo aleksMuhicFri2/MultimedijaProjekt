@@ -274,7 +274,6 @@ def travel_time():
 # SEARCH & RANKING ENDPOINTS
 # ------------------------------
 
-<<<<<<< HEAD
 def _norm_code(v):
     if v is None:
         return None
@@ -283,8 +282,6 @@ def _norm_code(v):
         return None
     return s.zfill(3)
 
-=======
->>>>>>> 422758504451562949a3ea51caba1fdac5ede881
 @app.route("/api/search", methods=["POST"])
 def search_cities():
     """Search and rank cities based on user criteria."""
@@ -306,7 +303,6 @@ def search_cities():
         )
         
         cities = [hit["_source"] for hit in result["hits"]["hits"]]
-<<<<<<< HEAD
 
         # Normalize workplace code
         workplace_code_raw = criteria.get("workplace_city_code")
@@ -355,29 +351,6 @@ def search_cities():
             }
         })
 
-=======
-        
-        # Run search and ranking
-        ranked_cities = search_engine.search_and_rank(cities, criteria)
-        
-        # Log top 5 results for debugging
-        if ranked_cities:
-            logger.info("Top 5 results:")
-            for i, result in enumerate(ranked_cities[:5]):
-                city = result['city']
-                logger.info(f"  {i+1}. {city['name']} - Score: {result['final_score']}, "
-                           f"Transport: {result['category_scores'].get('transportation')}")
-        
-        # Return top results
-        limit = criteria.get('limit', 20)
-        results = ranked_cities[:limit]
-        
-        return jsonify({
-            "total_matches": len(ranked_cities),
-            "results": results
-        })
-    
->>>>>>> 422758504451562949a3ea51caba1fdac5ede881
     except Exception as e:
         logger.error(f"Search failed: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500

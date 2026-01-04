@@ -82,7 +82,6 @@ GET /api/municipality/<code>
 
 GET /api/municipalities/regions
 
-<<<<<<< HEAD
 GET /api/municipalities/all
 
 POST /api/search
@@ -92,13 +91,6 @@ POST /api/admin/reload-data
 NOTES:
 - There is NO route at /
 - The frontend should display only values returned by the backend API (no client-side “estimated” cost totals).
-=======
-GET /api/reload (clears and reloads Elasticsearch)
-
-USE THIS TO RELOAD ALL THE DATA IN THE DATABASE
-
-curl -X POST http://127.0.0.1:5000/api/admin/reload-data
->>>>>>> 422758504451562949a3ea51caba1fdac5ede881
 
 FRONTEND SETUP (REACT + VITE)
 
@@ -110,14 +102,11 @@ Install dependencies:
 
 npm install
 
-<<<<<<< HEAD
 NOTE:
 If you add new frontend libraries (e.g. Chart.js for graphs), you MUST re-run:
   cd frontend
   npm install
 
-=======
->>>>>>> 422758504451562949a3ea51caba1fdac5ede881
 Start frontend:
 
 npm run dev

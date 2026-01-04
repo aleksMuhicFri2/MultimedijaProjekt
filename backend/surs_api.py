@@ -7,11 +7,7 @@ SURS_BASE_URL = "https://pxweb.stat.si/SiStatData/api/v1/sl/Data"
 
 
 def fetch_px(table_id, query=None):
-<<<<<<< HEAD
     url = f"{SURS_BASE_URL}/{table_id}"
-=======
-    url = f"{BASE_URL}/{table_id}"
->>>>>>> 422758504451562949a3ea51caba1fdac5ede881
 
     body = {
         "query": query or [],
@@ -114,11 +110,7 @@ def get_population_per_obcina():
         # 2. Fetch area data from SURS
         logger.info("Step 2: Fetching area data...")
         area_url = f"{SURS_BASE_URL}/02_prebivalstvo/02002_Prebivalstvo_regije_obcine/02002_prebivalstvo.px"
-<<<<<<< HEAD
 
-=======
-        
->>>>>>> 422758504451562949a3ea51caba1fdac5ede881
         try:
             area_response = requests.post(
                 area_url,
@@ -126,25 +118,14 @@ def get_population_per_obcina():
                     "query": [
                         {
                             "code": "MERITVE",
-<<<<<<< HEAD
                             "selection": {"filter": "item", "values": ["1118"]}
-=======
-                            "selection": {
-                                "filter": "item",
-                                "values": ["1118"]  # Area in km2
-                            }
->>>>>>> 422758504451562949a3ea51caba1fdac5ede881
                         }
                     ],
                     "response": {"format": "json-stat2"}
                 },
                 timeout=30
             )
-<<<<<<< HEAD
 
-=======
-            
->>>>>>> 422758504451562949a3ea51caba1fdac5ede881
             if area_response.status_code == 200:
                 area_data = area_response.json()
                 
@@ -166,36 +147,11 @@ def get_population_per_obcina():
                         logger.info(f"✓ Matched area for {matched_areas} municipalities from SURS")
             else:
                 logger.warning(f"Area API returned status {area_response.status_code}")
-<<<<<<< HEAD
 
         except Exception as e:
             logger.warning(f"Failed to fetch area from SURS: {e}")
             logger.warning("No static fallback area data will be used; area_km2 will remain null.")
 
-=======
-                
-        except Exception as e:
-            logger.warning(f"Failed to fetch area from SURS: {e}")
-            
-            # Fallback: Use hardcoded area data for major municipalities
-            logger.info("Using fallback area data...")
-            fallback_areas = {
-                "061": 275.0,  # Ljubljana
-                "070": 147.5,  # Maribor
-                "085": 236.0,  # Novo mesto
-                "050": 303.2,  # Koper
-                "011": 94.9,   # Celje
-                "052": 151.0,  # Kranj
-                "143": 51.5,   # Zagorje ob Savi
-                # Add more as needed
-            }
-            
-            for code, area in fallback_areas.items():
-                if code in result:
-                    result[code]["area_km2"] = area
-                    logger.info(f"  Set fallback area for {code}: {area} km²")
-        
->>>>>>> 422758504451562949a3ea51caba1fdac5ede881
         result_list = list(result.values())
         
         # Final statistics

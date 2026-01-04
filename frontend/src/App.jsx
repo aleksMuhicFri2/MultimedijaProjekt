@@ -14,10 +14,7 @@ function App() {
   const [searchResults, setSearchResults] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState(null);
-<<<<<<< HEAD
   const [searchMeta, setSearchMeta] = useState(null);
-=======
->>>>>>> 422758504451562949a3ea51caba1fdac5ede881
 
   useEffect(() => {
     if (!selectedCode) return;
@@ -70,10 +67,7 @@ function App() {
       
       const data = await response.json();
       setSearchResults(data.results);
-<<<<<<< HEAD
       setSearchMeta(data.meta || null);
-=======
->>>>>>> 422758504451562949a3ea51caba1fdac5ede881
     } catch (err) {
       console.error('Search failed:', err);
       setSearchError(err.message);
@@ -103,7 +97,6 @@ function App() {
 
       {/* Main Content with Modern Layout */}
       <div className="main-content">
-<<<<<<< HEAD
         {/* Map Section - Always Visible */}
         <div className="map-section">
           <SloveniaMap
@@ -113,9 +106,6 @@ function App() {
         </div>
 
         {/* Right Panel - Toggle between Data and Attribute Picker */}
-=======
-        {/* Left Section - Toggle between Data and Attribute Picker */}
->>>>>>> 422758504451562949a3ea51caba1fdac5ede881
         {viewMode === 'map' ? (
           <div className="data-section">
             {loading && (
@@ -143,7 +133,6 @@ function App() {
             {data && !error && <MunicipalityPanel data={data} />}
           </div>
         ) : (
-<<<<<<< HEAD
           <>
             <AttributePicker onSearch={handleSearch} />
             <SearchResults 
@@ -153,26 +142,6 @@ function App() {
               meta={searchMeta}
             />
           </>
-=======
-          <AttributePicker onSearch={handleSearch} />
-        )}
-
-        {/* Map Section - Top Right */}
-        <div className="map-section">
-          <SloveniaMap
-            selectedCode={selectedCode}
-            onSelectMunicipality={setSelectedCode}
-          />
-        </div>
-
-        {/* Search Results - Bottom row, full width */}
-        {viewMode === 'search' && (
-          <SearchResults 
-            results={searchResults} 
-            loading={searchLoading} 
-            error={searchError} 
-          />
->>>>>>> 422758504451562949a3ea51caba1fdac5ede881
         )}
       </div>
     </div>

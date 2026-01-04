@@ -41,7 +41,6 @@ function AttributePicker({ onSearch }) {
   }, []);
 
   const handleChange = (field, value) => {
-<<<<<<< HEAD
     setCriteria(prev => {
       if (field === 'workplace_city_code') {
         const normalized = value ? String(value).padStart(3, '0') : '';
@@ -53,9 +52,6 @@ function AttributePicker({ onSearch }) {
 
       return { ...prev, [field]: value };
     });
-=======
-    setCriteria(prev => ({ ...prev, [field]: value }));
->>>>>>> 422758504451562949a3ea51caba1fdac5ede881
   };
 
   const handleWeightChange = (category, value) => {
@@ -207,7 +203,6 @@ function AttributePicker({ onSearch }) {
             disabled={loadingCities}
           >
             <option value="">-- No workplace / Remote --</option>
-<<<<<<< HEAD
             {allCities.map(city => {
               const code3 = String(city.code).padStart(3, '0');
               return (
@@ -216,13 +211,6 @@ function AttributePicker({ onSearch }) {
                 </option>
               );
             })}
-=======
-            {allCities.map(city => (
-              <option key={city.code} value={city.code}>
-                {city.name} {city.region ? `(${city.region})` : ''}
-              </option>
-            ))}
->>>>>>> 422758504451562949a3ea51caba1fdac5ede881
           </select>
         </div>
 
