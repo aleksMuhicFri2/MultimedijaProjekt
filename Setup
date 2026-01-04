@@ -1,0 +1,163 @@
+SETUP INSTRUCTIONS
+
+SYSTEM REQUIREMENTS
+
+Install the following software:
+
+Docker Desktop
+
+Python 3.10 or newer
+
+Node.js 20 or newer
+
+Git
+
+After installing Docker Desktop, RESTART your computer.
+
+CLONE THE PROJECT
+
+Open a terminal and run:
+
+git clone https://github.com/
+cd multimedijaProjekt
+
+ELASTICSEARCH + KIBANA (REQUIRED)
+
+This project uses Elasticsearch 7.x (NOT 8 or 9).
+
+Open Docker Desktop
+
+Wait until it says “Docker is running”
+
+From the project root run:
+
+docker-compose up -d
+
+You must see:
+
+es
+
+kibana
+
+If Elasticsearch is not running, the backend WILL NOT WORK.
+
+BACKEND SETUP (FLASK)
+
+Go to backend folder:
+
+cd backend
+
+Create virtual environment:
+
+python -m venv venv
+
+Activate virtual environment (Windows):
+
+venv\Scripts\activate
+
+Install dependencies:
+
+pip install -r requirements.txt
+
+Start backend:
+
+python app.py
+
+Backend URL:
+
+http://localhost:5000
+
+NOTES:
+
+There is NO route at /
+
+http://localhost:5000/
+ returning 404 is NORMAL
+
+Elasticsearch index is created automatically on first run
+
+AVAILABLE API ENDPOINTS:
+
+GET /api/municipality/<code>
+
+GET /api/municipalities/regions
+
+GET /api/municipalities/all
+
+POST /api/search
+
+POST /api/admin/reload-data
+
+NOTES:
+- There is NO route at /
+- The frontend should display only values returned by the backend API (no client-side “estimated” cost totals).
+
+FRONTEND SETUP (REACT + VITE)
+
+Go to frontend folder:
+
+cd ../frontend
+
+Install dependencies:
+
+npm install
+
+NOTE:
+If you add new frontend libraries (e.g. Chart.js for graphs), you MUST re-run:
+  cd frontend
+  npm install
+
+Start frontend:
+
+npm run dev
+
+Frontend URL:
+
+http://localhost:5173
+
+PROJECT STRUCTURE
+
+multimedijaProjekt/
+backend/ Flask API
+frontend/ React frontend
+docker-compose.yml
+SETUP.txt
+
+HOW EVERYTHING CONNECTS
+
+Frontend communicates with backend using HTTP
+
+Backend stores and reads data from Elasticsearch
+
+Elasticsearch acts as the database
+
+Municipality CODE is the shared key between:
+
+SVG map
+
+Backend data
+
+Elasticsearch documents
+
+HOW TO RUN THE PROJECT (EVERY TIME)
+
+Start Docker Desktop
+
+From project root:
+
+docker-compose up -d
+
+Start backend:
+
+cd backend
+venv\Scripts\activate
+python app.py
+
+Start frontend:
+
+cd frontend
+npm run dev
+
+Open browser:
+
+http://localhost:5173
